@@ -25,6 +25,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
+import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.util.Log;
@@ -35,9 +36,20 @@ import android.widget.ExpandableListView;
 import android.widget.SimpleExpandableListAdapter;
 import android.widget.TextView;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.Semaphore;
+
+import static com.example.android.bluetoothlegatt.BluetoothLeService.ACTION_WRITE_RESPONSE_AVAILABLE;
 
 /**
  * For a given BLE device, this Activity provides the user interface to connect, display data,
@@ -112,6 +124,8 @@ public class DeviceControlActivity extends Activity {
             }
         }
     };
+
+    private BroadcastReceiver mWriteImageReceiver = null;
 
     // If a given GATT characteristic is selected, check for supported features.  This sample
     // demonstrates 'Read' and 'Notify' features.  See
@@ -298,12 +312,56 @@ public class DeviceControlActivity extends Activity {
         mGattServicesList.setAdapter(gattServiceAdapter);
     }
 
+    private void sendImage(Bitmap bitmap, byte mtuSize) {
+
+        //TODO = Move this to BluetoothService?
+        BluetoothGattCharacteristic gattCharacteristic = null;
+        Semaphore semaphore = new Semaphore(1);
+        byte[] bytesToWrite = new byte[20];
+        int bytesRead = 0;
+
+        mWriteImageReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                    if (intent.getAction() == ACTION_WRITE_RESPONSE_AVAILABLE) {
+                        int status = intent.getIntExtra(ACTION_WRITE_RESPONSE_AVAILABLE, 
+                    }
+            }
+        };
+
+        registerReceiver(mWriteImageReceiver, makeGattWriteFilter());
+
+        ByteBuffer bytebuffer = ByteBuffer.allocate(bitmap.getByteCount());
+        bitmap.copyPixelsToBuffer(bytebuffer);
+
+        InputStream is = new ByteArrayInputStream(bytebuffer.array());
+
+        try {
+            semaphore.acquire();
+            while ((bytesRead = is.read(bytesToWrite)) != -1) {
+                semaphore.acquire();
+                mBluetoothLeService.writeCharacteristic();
+            }
+        } catch (IOException ioEx) {
+            Log.e(TAG, ioEx.getMessage());
+        } catch (InterruptedException interruptEx) {
+            Log.e(TAG, interruptEx.getMessage());
+        }
+
+    }
+
     private static IntentFilter makeGattUpdateIntentFilter() {
         final IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(BluetoothLeService.ACTION_GATT_CONNECTED);
         intentFilter.addAction(BluetoothLeService.ACTION_GATT_DISCONNECTED);
         intentFilter.addAction(BluetoothLeService.ACTION_GATT_SERVICES_DISCOVERED);
         intentFilter.addAction(BluetoothLeService.ACTION_DATA_AVAILABLE);
+        return intentFilter;
+    }
+
+    private static IntentFilter makeGattWriteFilter() {
+        final IntentFilter intentFilter = new IntentFilter();
+        intentFilter.addAction(ACTION_WRITE_RESPONSE_AVAILABLE);
         return intentFilter;
     }
 }
