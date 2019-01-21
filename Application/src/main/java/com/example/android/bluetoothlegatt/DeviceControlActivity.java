@@ -17,6 +17,7 @@
 package com.example.android.bluetoothlegatt;
 
 import android.app.Activity;
+import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattService;
 import android.content.BroadcastReceiver;
@@ -48,6 +49,7 @@ import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.example.android.bluetoothlegatt.BluetoothLeService.ACTION_WRITE_RESPONSE_AVAILABLE;
 
@@ -312,42 +314,59 @@ public class DeviceControlActivity extends Activity {
         mGattServicesList.setAdapter(gattServiceAdapter);
     }
 
-    private void sendImage(Bitmap bitmap, byte mtuSize) {
+    private boolean sendImage(BluetoothGattCharacteristic gattCharacteristic, final byte[] bytes) {
 
         //TODO = Move this to BluetoothService?
-        BluetoothGattCharacteristic gattCharacteristic = null;
-        Semaphore semaphore = new Semaphore(1);
+        final AtomicBoolean cancel = new AtomicBoolean(false);
+        final Semaphore semaphore = new Semaphore(1);
+        final InputStream inputStream = new ByteArrayInputStream(bytes);
         byte[] bytesToWrite = new byte[20];
-        int bytesRead = 0;
+        boolean result = false;
 
         mWriteImageReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
                     if (intent.getAction() == ACTION_WRITE_RESPONSE_AVAILABLE) {
-                        int status = intent.getIntExtra(ACTION_WRITE_RESPONSE_AVAILABLE, 
+                        int status = intent.getIntExtra(ACTION_WRITE_RESPONSE_AVAILABLE, BluetoothGatt.GATT_WRITE_NOT_PERMITTED);
+                        if (status != BluetoothGatt.GATT_SUCCESS) {
+                            cancel.set(true);
+                        }
+
+                        semaphore.release();
                     }
             }
         };
 
         registerReceiver(mWriteImageReceiver, makeGattWriteFilter());
 
+        /*
         ByteBuffer bytebuffer = ByteBuffer.allocate(bitmap.getByteCount());
         bitmap.copyPixelsToBuffer(bytebuffer);
 
         InputStream is = new ByteArrayInputStream(bytebuffer.array());
+        */
 
         try {
             semaphore.acquire();
-            while ((bytesRead = is.read(bytesToWrite)) != -1) {
+            while ((inputStream.read(bytesToWrite)) != -1) {
+                gattCharacteristic.setValue(bytesToWrite);
+                mBluetoothLeService.writeCharacteristic(gattCharacteristic);
                 semaphore.acquire();
-                mBluetoothLeService.writeCharacteristic();
+                if (cancel.get()){
+                    break;
+                }
             }
+
+            inputStream.close();
+            result = (cancel.get() ? false : true);
+
         } catch (IOException ioEx) {
             Log.e(TAG, ioEx.getMessage());
         } catch (InterruptedException interruptEx) {
             Log.e(TAG, interruptEx.getMessage());
         }
 
+        return result;
     }
 
     private static IntentFilter makeGattUpdateIntentFilter() {
