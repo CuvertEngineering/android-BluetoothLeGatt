@@ -33,6 +33,7 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.Button;
 import android.widget.ExpandableListView;
 import android.widget.SimpleExpandableListAdapter;
 import android.widget.TextView;
@@ -45,6 +46,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
@@ -67,10 +69,12 @@ public class DeviceControlActivity extends Activity {
 
     private TextView mConnectionState;
     private TextView mDataField;
+    private Button mSendImageBtn;
     private String mDeviceName;
     private String mDeviceAddress;
     private ExpandableListView mGattServicesList;
     private BluetoothLeService mBluetoothLeService;
+    private SendImageRunnable mSendImageRunnable;
     private ArrayList<ArrayList<BluetoothGattCharacteristic>> mGattCharacteristics =
             new ArrayList<ArrayList<BluetoothGattCharacteristic>>();
     private boolean mConnected = false;
@@ -78,6 +82,7 @@ public class DeviceControlActivity extends Activity {
 
     private final String LIST_NAME = "NAME";
     private final String LIST_UUID = "UUID";
+    private final String WRITE_UUID = "6e400002-b5a3-f393-e0a9-e50e24dcca9e";
 
     // Code to manage Service lifecycle.
     private final ServiceConnection mServiceConnection = new ServiceConnection() {
@@ -142,6 +147,13 @@ public class DeviceControlActivity extends Activity {
                         final BluetoothGattCharacteristic characteristic =
                                 mGattCharacteristics.get(groupPosition).get(childPosition);
                         final int charaProp = characteristic.getProperties();
+                        if (characteristic.getUuid().toString().contains(WRITE_UUID)) {
+                            Log.i(TAG, "Found the correct characteristic");
+                            mSendImageRunnable = new SendImageRunnable(mBluetoothLeService, characteristic);
+                            Thread t = new Thread(mSendImageRunnable);
+                            t.start();
+                        }
+                        /*
                         if ((charaProp | BluetoothGattCharacteristic.PROPERTY_READ) > 0) {
                             // If there is an active notification on a characteristic, clear
                             // it first so it doesn't update the data field on the user interface.
@@ -156,7 +168,7 @@ public class DeviceControlActivity extends Activity {
                             mNotifyCharacteristic = characteristic;
                             mBluetoothLeService.setCharacteristicNotification(
                                     characteristic, true);
-                        }
+                        }*/
                         return true;
                     }
                     return false;
@@ -183,6 +195,11 @@ public class DeviceControlActivity extends Activity {
         mGattServicesList.setOnChildClickListener(servicesListClickListner);
         mConnectionState = (TextView) findViewById(R.id.connection_state);
         mDataField = (TextView) findViewById(R.id.data_value);
+        mSendImageBtn = (Button) findViewById(R.id.sendImage);
+
+        //mSendImageRunnable = new SendImageRunnable(mBluetoothLeService);
+
+        setupUICallbacks();
 
         getActionBar().setTitle(mDeviceName);
         getActionBar().setDisplayHomeAsUpEnabled(true);
@@ -240,6 +257,43 @@ public class DeviceControlActivity extends Activity {
                 return true;
         }
         return super.onOptionsItemSelected(item);
+    }
+
+
+    private class SendImageRunnable implements Runnable {
+
+        private BluetoothLeService mBluetoothLeService;
+        private BluetoothGattCharacteristic mBluetoothGattChar;
+
+        private SendImageRunnable(BluetoothLeService bluetoothLeService, BluetoothGattCharacteristic bluetoothGattChar) {
+            super();
+            mBluetoothLeService = bluetoothLeService;
+            mBluetoothGattChar = bluetoothGattChar;
+        }
+
+        @Override
+        public void run() {
+            /*
+            UUID bleUUID = UUID.fromString("6e400002-b5a3-f393-e0a9-e50e24dcca9e");
+            BluetoothGattCharacteristic characteristic =
+                    new BluetoothGattCharacteristic(bleUUID,
+                            BluetoothGattCharacteristic.PROPERTY_WRITE_NO_RESPONSE,
+                            0);
+            */
+            byte[] randomBytes = new byte[32000];
+            new Random().nextBytes(randomBytes);
+            sendImage(mBluetoothGattChar, randomBytes);
+        }
+    }
+
+    private void setupUICallbacks() {
+        mSendImageBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Thread t = new Thread(mSendImageRunnable);
+                t.start();
+            }
+        });
     }
 
     private void updateConnectionState(final int resourceId) {
@@ -314,6 +368,7 @@ public class DeviceControlActivity extends Activity {
         mGattServicesList.setAdapter(gattServiceAdapter);
     }
 
+    //TODO = need to throw into a thread or else it will block.
     private boolean sendImage(BluetoothGattCharacteristic gattCharacteristic, final byte[] bytes) {
 
         //TODO = Move this to BluetoothService?
@@ -322,6 +377,16 @@ public class DeviceControlActivity extends Activity {
         final InputStream inputStream = new ByteArrayInputStream(bytes);
         byte[] bytesToWrite = new byte[20];
         boolean result = false;
+
+        if (!mBluetoothLeService.setConnectionPriority()) {
+            Log.e(TAG, "Unable to set connection priority");
+            return false;
+        }
+
+        if (!mBluetoothLeService.requestMTUsize((byte)20)) {
+            Log.e(TAG, "Unable to set MTU size");
+            return false;
+        }
 
         mWriteImageReceiver = new BroadcastReceiver() {
             @Override
@@ -346,11 +411,21 @@ public class DeviceControlActivity extends Activity {
         InputStream is = new ByteArrayInputStream(bytebuffer.array());
         */
 
+        Log.i(TAG, "STARTING SEND");
+        int bytesSent = 0;
         try {
             semaphore.acquire();
             while ((inputStream.read(bytesToWrite)) != -1) {
+                Log.v(TAG, "Sending data...");
+                bytesSent += bytesToWrite.length;
+                Log.v(TAG, Integer.toString(bytesSent));
                 gattCharacteristic.setValue(bytesToWrite);
-                mBluetoothLeService.writeCharacteristic(gattCharacteristic);
+                Thread.sleep(2);
+                if (!mBluetoothLeService.writeCharacteristic(gattCharacteristic)) {
+                    Log.e(TAG, "Unable to write characteristic, exiting...");
+                    cancel.set(true);
+                    break;
+                }
                 semaphore.acquire();
                 if (cancel.get()){
                     break;
@@ -366,6 +441,7 @@ public class DeviceControlActivity extends Activity {
             Log.e(TAG, interruptEx.getMessage());
         }
 
+        Log.i(TAG, "END SEND");
         return result;
     }
 

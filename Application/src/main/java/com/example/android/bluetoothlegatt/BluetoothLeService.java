@@ -293,18 +293,34 @@ public class BluetoothLeService extends Service {
         mBluetoothGatt.readCharacteristic(characteristic);
     }
 
-    public void writeCharacteristic(BluetoothGattCharacteristic characteristic) {
+    public boolean writeCharacteristic(BluetoothGattCharacteristic characteristic) {
         if (mBluetoothAdapter == null || mBluetoothGatt == null) {
             Log.w(TAG, "BluetoothAdapter not initialized");
-            return;
+            return false;
         }
 
-
-        mBluetoothGatt.writeCharacteristic(characteristic);
+        //mBluetoothGatt.requestMtu(100);
+        return mBluetoothGatt.writeCharacteristic(characteristic);
     }
 
+    //TODO = fix
+    public boolean setConnectionPriority() {
+        if (mBluetoothAdapter == null || mBluetoothGatt == null) {
+            Log.w(TAG, "BluetoothAdapter not initialized");
+            return false;
+        }
 
+        return mBluetoothGatt.requestConnectionPriority(BluetoothGatt.CONNECTION_PRIORITY_HIGH);
+    }
 
+    public boolean requestMTUsize(byte mtuSize) {
+        if (mBluetoothAdapter == null || mBluetoothGatt == null) {
+            Log.w(TAG, "BluetoothAdapter not initialized");
+            return false;
+        }
+
+        return mBluetoothGatt.requestMtu(mtuSize);
+    }
 
     /**
      * Enables or disables notification on a give characteristic.
@@ -340,4 +356,6 @@ public class BluetoothLeService extends Service {
 
         return mBluetoothGatt.getServices();
     }
+
+
 }
