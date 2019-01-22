@@ -60,6 +60,11 @@ public class BluetoothLeService extends Service {
     private static final int STATE_DISCONNECTED = 0;
     private static final int STATE_CONNECTING = 1;
     private static final int STATE_CONNECTED = 2;
+    private static final byte[] IMAGE_BEGIN_CMD = {0};
+    private static final byte[] IMAGE_END_CMD = {1};
+    private static final byte[] IMAGE_SEND_BYTE_COUNT = {2};
+    private static final String CHR_RAW_UUID = "6e400002-b5a3-f393-e0a9-e50e24dcca9e";
+    private static final String CHR_CHK_UUID = "6e400004-b5a3-f393-e0a9-e50e24dcca9e";
 
     public final static String ACTION_GATT_CONNECTED =
             "com.example.bluetooth.le.ACTION_GATT_CONNECTED";
@@ -114,7 +119,9 @@ public class BluetoothLeService extends Service {
                                          BluetoothGattCharacteristic characteristic,
                                          int status) {
             if (status == BluetoothGatt.GATT_SUCCESS) {
-                broadcastUpdate(ACTION_DATA_AVAILABLE, characteristic);
+                final Intent intent = new Intent(ACTION_DATA_AVAILABLE);
+                intent.putExtra(ACTION_DATA_AVAILABLE, characteristic.getValue());
+                mLocalBroadcastManager.sendBroadcast(intent);
             }
         }
 
@@ -363,6 +370,103 @@ public class BluetoothLeService extends Service {
         }
     }
 
+    private class BluetoothCommandLock {
+        private Semaphore _semaphore;
+
+        BluetoothCommandLock(int semaphoreValue) {
+            _semaphore = new Semaphore(semaphoreValue);
+        }
+
+        boolean getLock() {
+            try {
+                _semaphore.acquire();
+            } catch (Exception ex) {
+                Log.e(TAG, ex.getMessage());
+                return false;
+            }
+            return true;
+        }
+
+        boolean releaseLock() {
+            _semaphore.release();
+            return true;
+        }
+    }
+
+    private boolean writeBytes(BluetoothGattCharacteristic gattCharacteristic, byte[] bytes) {
+        final BluetoothCommandLock _mutex = new BluetoothCommandLock(1);
+        final AtomicBoolean result = new AtomicBoolean(false);
+
+        BroadcastReceiver writeBytesReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                if (intent.getAction() == ACTION_WRITE_RESPONSE_AVAILABLE) {
+                    if (intent.getIntExtra(ACTION_WRITE_RESPONSE_AVAILABLE,
+                            BluetoothGatt.GATT_WRITE_NOT_PERMITTED) == BluetoothGatt.GATT_SUCCESS) {
+                        result.set(true);
+                    }
+                }
+                _mutex.releaseLock();
+            }
+        };
+
+        mLocalBroadcastManager.registerReceiver(writeBytesReceiver, makeGattWriteFilter());
+
+        _mutex.getLock();
+
+        // Write value
+        gattCharacteristic.setValue(bytes);
+        writeCharacteristic(gattCharacteristic);
+
+        _mutex.getLock();
+
+        mLocalBroadcastManager.unregisterReceiver(writeBytesReceiver);
+        return result.get();
+    }
+
+    private boolean writeReadImageVerify(BluetoothGattCharacteristic gattCharacteristic, int value) {
+
+        final BluetoothCommandLock _mutex = new BluetoothCommandLock(1);
+        final AtomicBoolean result = new AtomicBoolean(false);
+        BroadcastReceiver mWriteReadReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                Log.v("onReceive", "onReceive");
+                if (intent.getAction() == ACTION_WRITE_RESPONSE_AVAILABLE) {
+                    if (intent.getIntExtra(ACTION_WRITE_RESPONSE_AVAILABLE,
+                            BluetoothGatt.GATT_WRITE_NOT_PERMITTED) == BluetoothGatt.GATT_SUCCESS) {
+                        result.set(true);
+                    }
+                } else if (intent.getAction() == ACTION_DATA_AVAILABLE){
+                    byte[] value = intent.getByteArrayExtra(ACTION_DATA_AVAILABLE);
+                    result.set(true);
+                }
+                _mutex.releaseLock();
+            }
+        };
+
+        mLocalBroadcastManager.registerReceiver(mWriteReadReceiver, makeGattWriteFilter());
+
+        _mutex.getLock();
+
+        // Write value
+       // gattCharacteristic.setValue(35, BluetoothGattCharacteristic.FORMAT_UINT16, 0);
+        gattCharacteristic.setValue(IMAGE_SEND_BYTE_COUNT);
+        writeCharacteristic(gattCharacteristic);
+
+        _mutex.getLock();
+
+        // Read value
+        readCharacteristic(gattCharacteristic);
+
+        _mutex.getLock();
+
+        mLocalBroadcastManager.unregisterReceiver(mWriteReadReceiver);
+        return result.get();
+    }
+
+
+
     public boolean sendImage(BluetoothGattCharacteristic gattCharacteristic, final byte[] bytes) {
 
         if (mBluetoothAdapter == null || mBluetoothGatt == null) {
@@ -373,8 +477,11 @@ public class BluetoothLeService extends Service {
         final AtomicBoolean cancel = new AtomicBoolean(false);
         final Semaphore semaphore = new Semaphore(1);
         final InputStream inputStream = new ByteArrayInputStream(bytes);
+        //TODO = get Char 1 and Char 2 references
+        BluetoothGattCharacteristic CHR_RAW = null;
+        BluetoothGattCharacteristic CHR_CHK = null;
         BroadcastReceiver mWriteImageReceiver = null;
-        byte[] bytesToWrite = new byte[100];
+        byte[] bytesToWrite = new byte[20];
         boolean result = false;
         int bytesSent = 0;
 
@@ -383,15 +490,20 @@ public class BluetoothLeService extends Service {
             return false;
         }
 
-        if (!requestMTUsize((byte)100)) {
+        if (!requestMTUsize((byte)20)) {
             Log.e(TAG, "Unable to set MTU size");
             return false;
         }
 
-        try {
-            Thread.sleep(7000);
-        } catch (Exception ex) {}
+        CHR_RAW = getCharacteristic(UUID.fromString(CHR_RAW_UUID));
+        CHR_CHK = getCharacteristic(UUID.fromString(CHR_CHK_UUID));
 
+        if (CHR_RAW == null || CHR_CHK == null) {
+            Log.e(TAG, "Chars are null!");
+            return false;
+        }
+
+        /*
         mWriteImageReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
@@ -405,17 +517,39 @@ public class BluetoothLeService extends Service {
             }
         };
 
-        mLocalBroadcastManager.registerReceiver(mWriteImageReceiver, makeGattWriteFilter());
+        mLocalBroadcastManager.registerReceiver(mWriteImageReceiver, makeGattWriteFilter());*/
 
         Log.i(TAG, "STARTING SEND");
         try {
-            semaphore.acquire();
-            while ((inputStream.read(bytesToWrite)) != -1) {
-                Log.v(TAG, "Sending data...");
-                bytesSent += bytesToWrite.length;
-                Log.v(TAG, Integer.toString(bytesSent));
-                gattCharacteristic.setValue(bytesToWrite);
-                Thread.sleep(2);
+            if (writeBytes(CHR_CHK, IMAGE_BEGIN_CMD)) {
+                while ((inputStream.read(bytesToWrite)) != -1) {
+                    Log.v(TAG, "Sending dada...");
+                    /// To attempt 3 times
+                    int retryCount = 0;
+                    do {
+                        if ((writeBytes(CHR_RAW, bytesToWrite))
+                                && (writeReadImageVerify(CHR_CHK, bytesToWrite.length))) {
+                            break;
+                        }
+                        else {
+                            retryCount++;
+                            if (retryCount == 3) {
+                                cancel.set(true);
+                                break;
+                            }
+                        }
+                    } while (retryCount < 3);
+
+                    // 0. Write 0 to CHR_CHK
+                    // 1. Write 4K bytes to CHR_RAW
+                    // 2. Write num of bytes to CHR_CHK [must be two byte array]
+                    // 3. Read from CHR_CHK to verify that value written in 2 still matches.
+                    // 4. Increment by 4K bytes and repeat steps 1-3 until no more bytes are available
+                    // 5. Once no more bytes are available, write 1 to CHR_CHK
+
+                    //gattCharacteristic.setValue(bytesToWrite);
+                    //Thread.sleep(2);
+                /*
                 if (!writeCharacteristic(gattCharacteristic)) {
                     Log.e(TAG, "Unable to write characteristic, exiting...");
                     cancel.set(true);
@@ -424,6 +558,11 @@ public class BluetoothLeService extends Service {
                 semaphore.acquire();
                 if (cancel.get()){
                     break;
+                }*/
+                }
+
+                if (!cancel.get()) {
+                    cancel.set(writeBytes(CHR_CHK, IMAGE_END_CMD));
                 }
             }
 
@@ -432,11 +571,9 @@ public class BluetoothLeService extends Service {
 
         } catch (IOException ioEx) {
             Log.e(TAG, ioEx.getMessage());
-        } catch (InterruptedException interruptEx) {
-            Log.e(TAG, interruptEx.getMessage());
         }
 
-        mLocalBroadcastManager.unregisterReceiver(mWriteImageReceiver);
+        //mLocalBroadcastManager.unregisterReceiver(mWriteImageReceiver);
 
         Log.i(TAG, "END SEND");
         return result;
@@ -454,9 +591,27 @@ public class BluetoothLeService extends Service {
         return mBluetoothGatt.getServices();
     }
 
+    private BluetoothGattCharacteristic getCharacteristic(UUID uuid) {
+        List<BluetoothGattService> services = getSupportedGattServices();
+        if (services == null) return null;
+
+        for (int i = 0; i < services.size(); i++) {
+            List<BluetoothGattCharacteristic> characteristics = services.get(i).getCharacteristics();
+            for (int j = 0; j < characteristics.size(); j++) {
+                BluetoothGattCharacteristic characteristic = characteristics.get(j);
+                if (characteristic.getUuid().equals(uuid)) {
+                    return characteristic;
+                }
+            }
+        }
+
+        return null;
+    }
+
     private static IntentFilter makeGattWriteFilter() {
         final IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(ACTION_WRITE_RESPONSE_AVAILABLE);
+        intentFilter.addAction(ACTION_DATA_AVAILABLE);
         return intentFilter;
     }
 
