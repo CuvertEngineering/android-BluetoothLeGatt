@@ -70,9 +70,10 @@
         android:id="@+id/sendImage"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Button" />
+        android:text="Send Image" />
 
-    <ExpandableListView android:id="@+id/gatt_services_list"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"/>
+    <ExpandableListView
+        android:id="@+id/gatt_services_list"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
 </LinearLayout>

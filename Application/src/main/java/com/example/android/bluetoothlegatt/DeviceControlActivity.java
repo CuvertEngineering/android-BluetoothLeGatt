@@ -29,6 +29,7 @@ import android.content.ServiceConnection;
 import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -74,11 +75,11 @@ public class DeviceControlActivity extends Activity {
     private String mDeviceAddress;
     private ExpandableListView mGattServicesList;
     private BluetoothLeService mBluetoothLeService;
-    private SendImageRunnable mSendImageRunnable;
     private ArrayList<ArrayList<BluetoothGattCharacteristic>> mGattCharacteristics =
             new ArrayList<ArrayList<BluetoothGattCharacteristic>>();
     private boolean mConnected = false;
     private BluetoothGattCharacteristic mNotifyCharacteristic;
+    private LocalBroadcastManager mLocalBroadcastManager;
 
     private final String LIST_NAME = "NAME";
     private final String LIST_UUID = "UUID";
@@ -132,8 +133,6 @@ public class DeviceControlActivity extends Activity {
         }
     };
 
-    private BroadcastReceiver mWriteImageReceiver = null;
-
     // If a given GATT characteristic is selected, check for supported features.  This sample
     // demonstrates 'Read' and 'Notify' features.  See
     // http://d.android.com/reference/android/bluetooth/BluetoothGatt.html for the complete
@@ -149,9 +148,16 @@ public class DeviceControlActivity extends Activity {
                         final int charaProp = characteristic.getProperties();
                         if (characteristic.getUuid().toString().contains(WRITE_UUID)) {
                             Log.i(TAG, "Found the correct characteristic");
-                            mSendImageRunnable = new SendImageRunnable(mBluetoothLeService, characteristic);
-                            Thread t = new Thread(mSendImageRunnable);
-                            t.start();
+                            Thread sendImageThread = new Thread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    byte[] randomBytes = new byte[32000];
+                                    new Random().nextBytes(randomBytes);
+                                    mBluetoothLeService.sendImage(characteristic,
+                                            randomBytes);
+                                }
+                            });
+                            sendImageThread.start();
                         }
                         /*
                         if ((charaProp | BluetoothGattCharacteristic.PROPERTY_READ) > 0) {
@@ -201,6 +207,7 @@ public class DeviceControlActivity extends Activity {
 
         setupUICallbacks();
 
+        mLocalBroadcastManager = LocalBroadcastManager.getInstance(getApplicationContext());
         getActionBar().setTitle(mDeviceName);
         getActionBar().setDisplayHomeAsUpEnabled(true);
         Intent gattServiceIntent = new Intent(this, BluetoothLeService.class);
@@ -210,7 +217,7 @@ public class DeviceControlActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
-        registerReceiver(mGattUpdateReceiver, makeGattUpdateIntentFilter());
+        mLocalBroadcastManager.registerReceiver(mGattUpdateReceiver, makeGattUpdateIntentFilter());
         if (mBluetoothLeService != null) {
             final boolean result = mBluetoothLeService.connect(mDeviceAddress);
             Log.d(TAG, "Connect request result=" + result);
@@ -220,7 +227,7 @@ public class DeviceControlActivity extends Activity {
     @Override
     protected void onPause() {
         super.onPause();
-        unregisterReceiver(mGattUpdateReceiver);
+        mLocalBroadcastManager.unregisterReceiver(mGattUpdateReceiver);
     }
 
     @Override
@@ -260,6 +267,8 @@ public class DeviceControlActivity extends Activity {
     }
 
 
+
+    /*
     private class SendImageRunnable implements Runnable {
 
         private BluetoothLeService mBluetoothLeService;
@@ -273,27 +282,13 @@ public class DeviceControlActivity extends Activity {
 
         @Override
         public void run() {
-            /*
-            UUID bleUUID = UUID.fromString("6e400002-b5a3-f393-e0a9-e50e24dcca9e");
-            BluetoothGattCharacteristic characteristic =
-                    new BluetoothGattCharacteristic(bleUUID,
-                            BluetoothGattCharacteristic.PROPERTY_WRITE_NO_RESPONSE,
-                            0);
-            */
             byte[] randomBytes = new byte[32000];
             new Random().nextBytes(randomBytes);
-            sendImage(mBluetoothGattChar, randomBytes);
+            //sendImage(mBluetoothGattChar, randomBytes);
         }
-    }
+    }*/
 
     private void setupUICallbacks() {
-        mSendImageBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Thread t = new Thread(mSendImageRunnable);
-                t.start();
-            }
-        });
     }
 
     private void updateConnectionState(final int resourceId) {
@@ -368,82 +363,6 @@ public class DeviceControlActivity extends Activity {
         mGattServicesList.setAdapter(gattServiceAdapter);
     }
 
-    //TODO = need to throw into a thread or else it will block.
-    private boolean sendImage(BluetoothGattCharacteristic gattCharacteristic, final byte[] bytes) {
-
-        //TODO = Move this to BluetoothService?
-        final AtomicBoolean cancel = new AtomicBoolean(false);
-        final Semaphore semaphore = new Semaphore(1);
-        final InputStream inputStream = new ByteArrayInputStream(bytes);
-        byte[] bytesToWrite = new byte[20];
-        boolean result = false;
-
-        if (!mBluetoothLeService.setConnectionPriority()) {
-            Log.e(TAG, "Unable to set connection priority");
-            return false;
-        }
-
-        if (!mBluetoothLeService.requestMTUsize((byte)20)) {
-            Log.e(TAG, "Unable to set MTU size");
-            return false;
-        }
-
-        mWriteImageReceiver = new BroadcastReceiver() {
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                    if (intent.getAction() == ACTION_WRITE_RESPONSE_AVAILABLE) {
-                        int status = intent.getIntExtra(ACTION_WRITE_RESPONSE_AVAILABLE, BluetoothGatt.GATT_WRITE_NOT_PERMITTED);
-                        if (status != BluetoothGatt.GATT_SUCCESS) {
-                            cancel.set(true);
-                        }
-
-                        semaphore.release();
-                    }
-            }
-        };
-
-        registerReceiver(mWriteImageReceiver, makeGattWriteFilter());
-
-        /*
-        ByteBuffer bytebuffer = ByteBuffer.allocate(bitmap.getByteCount());
-        bitmap.copyPixelsToBuffer(bytebuffer);
-
-        InputStream is = new ByteArrayInputStream(bytebuffer.array());
-        */
-
-        Log.i(TAG, "STARTING SEND");
-        int bytesSent = 0;
-        try {
-            semaphore.acquire();
-            while ((inputStream.read(bytesToWrite)) != -1) {
-                Log.v(TAG, "Sending data...");
-                bytesSent += bytesToWrite.length;
-                Log.v(TAG, Integer.toString(bytesSent));
-                gattCharacteristic.setValue(bytesToWrite);
-                Thread.sleep(2);
-                if (!mBluetoothLeService.writeCharacteristic(gattCharacteristic)) {
-                    Log.e(TAG, "Unable to write characteristic, exiting...");
-                    cancel.set(true);
-                    break;
-                }
-                semaphore.acquire();
-                if (cancel.get()){
-                    break;
-                }
-            }
-
-            inputStream.close();
-            result = (cancel.get() ? false : true);
-
-        } catch (IOException ioEx) {
-            Log.e(TAG, ioEx.getMessage());
-        } catch (InterruptedException interruptEx) {
-            Log.e(TAG, interruptEx.getMessage());
-        }
-
-        Log.i(TAG, "END SEND");
-        return result;
-    }
 
     private static IntentFilter makeGattUpdateIntentFilter() {
         final IntentFilter intentFilter = new IntentFilter();
@@ -451,12 +370,6 @@ public class DeviceControlActivity extends Activity {
         intentFilter.addAction(BluetoothLeService.ACTION_GATT_DISCONNECTED);
         intentFilter.addAction(BluetoothLeService.ACTION_GATT_SERVICES_DISCOVERED);
         intentFilter.addAction(BluetoothLeService.ACTION_DATA_AVAILABLE);
-        return intentFilter;
-    }
-
-    private static IntentFilter makeGattWriteFilter() {
-        final IntentFilter intentFilter = new IntentFilter();
-        intentFilter.addAction(ACTION_WRITE_RESPONSE_AVAILABLE);
         return intentFilter;
     }
 }

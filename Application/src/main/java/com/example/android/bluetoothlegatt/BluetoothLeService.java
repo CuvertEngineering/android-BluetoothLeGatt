@@ -26,14 +26,22 @@ import android.bluetooth.BluetoothGattDescriptor;
 import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothProfile;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.os.Binder;
 import android.os.IBinder;
+import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Service for managing connection and data communication with a GATT server hosted on a
@@ -46,6 +54,7 @@ public class BluetoothLeService extends Service {
     private BluetoothAdapter mBluetoothAdapter;
     private String mBluetoothDeviceAddress;
     private BluetoothGatt mBluetoothGatt;
+    private LocalBroadcastManager mLocalBroadcastManager;
     private int mConnectionState = STATE_DISCONNECTED;
 
     private static final int STATE_DISCONNECTED = 0;
@@ -121,13 +130,21 @@ public class BluetoothLeService extends Service {
                                            int status) {
             final Intent intent = new Intent(ACTION_WRITE_RESPONSE_AVAILABLE);
             intent.putExtra(ACTION_WRITE_RESPONSE_AVAILABLE, status);
-            sendBroadcast(intent);
+            mLocalBroadcastManager.sendBroadcast(intent);
+        }
+
+        @Override
+        public void onMtuChanged(BluetoothGatt gatt, int mtu, int status) {
+            super.onMtuChanged(gatt, mtu, status);
+            if (status == BluetoothGatt.GATT_SUCCESS) {
+
+            }
         }
     };
 
     private void broadcastUpdate(final String action) {
         final Intent intent = new Intent(action);
-        sendBroadcast(intent);
+        mLocalBroadcastManager.sendBroadcast(intent);
     }
 
     private void broadcastUpdate(final String action,
@@ -160,7 +177,7 @@ public class BluetoothLeService extends Service {
                 intent.putExtra(EXTRA_DATA, new String(data) + "\n" + stringBuilder.toString());
             }
         }
-        sendBroadcast(intent);
+        mLocalBroadcastManager.sendBroadcast(intent);
     }
 
     public class LocalBinder extends Binder {
@@ -206,6 +223,8 @@ public class BluetoothLeService extends Service {
             Log.e(TAG, "Unable to obtain a BluetoothAdapter.");
             return false;
         }
+
+        mLocalBroadcastManager = LocalBroadcastManager.getInstance(getApplicationContext());
 
         return true;
     }
@@ -298,7 +317,6 @@ public class BluetoothLeService extends Service {
             Log.w(TAG, "BluetoothAdapter not initialized");
             return false;
         }
-
         //mBluetoothGatt.requestMtu(100);
         return mBluetoothGatt.writeCharacteristic(characteristic);
     }
@@ -345,6 +363,85 @@ public class BluetoothLeService extends Service {
         }
     }
 
+    public boolean sendImage(BluetoothGattCharacteristic gattCharacteristic, final byte[] bytes) {
+
+        if (mBluetoothAdapter == null || mBluetoothGatt == null) {
+            Log.w(TAG, "BluetoothAdapter not initialized");
+            return false;
+        }
+
+        final AtomicBoolean cancel = new AtomicBoolean(false);
+        final Semaphore semaphore = new Semaphore(1);
+        final InputStream inputStream = new ByteArrayInputStream(bytes);
+        BroadcastReceiver mWriteImageReceiver = null;
+        byte[] bytesToWrite = new byte[100];
+        boolean result = false;
+        int bytesSent = 0;
+
+        if (!setConnectionPriority()) {
+            Log.e(TAG, "Unable to set connection priority");
+            return false;
+        }
+
+        if (!requestMTUsize((byte)100)) {
+            Log.e(TAG, "Unable to set MTU size");
+            return false;
+        }
+
+        try {
+            Thread.sleep(7000);
+        } catch (Exception ex) {}
+
+        mWriteImageReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                if (intent.getAction() == ACTION_WRITE_RESPONSE_AVAILABLE) {
+                    int status = intent.getIntExtra(ACTION_WRITE_RESPONSE_AVAILABLE, BluetoothGatt.GATT_WRITE_NOT_PERMITTED);
+                    if (status != BluetoothGatt.GATT_SUCCESS) {
+                        cancel.set(true);
+                    }
+                    semaphore.release();
+                }
+            }
+        };
+
+        mLocalBroadcastManager.registerReceiver(mWriteImageReceiver, makeGattWriteFilter());
+
+        Log.i(TAG, "STARTING SEND");
+        try {
+            semaphore.acquire();
+            while ((inputStream.read(bytesToWrite)) != -1) {
+                Log.v(TAG, "Sending data...");
+                bytesSent += bytesToWrite.length;
+                Log.v(TAG, Integer.toString(bytesSent));
+                gattCharacteristic.setValue(bytesToWrite);
+                Thread.sleep(2);
+                if (!writeCharacteristic(gattCharacteristic)) {
+                    Log.e(TAG, "Unable to write characteristic, exiting...");
+                    cancel.set(true);
+                    break;
+                }
+                semaphore.acquire();
+                if (cancel.get()){
+                    break;
+                }
+            }
+
+            inputStream.close();
+            result = (cancel.get() ? false : true);
+
+        } catch (IOException ioEx) {
+            Log.e(TAG, ioEx.getMessage());
+        } catch (InterruptedException interruptEx) {
+            Log.e(TAG, interruptEx.getMessage());
+        }
+
+        mLocalBroadcastManager.unregisterReceiver(mWriteImageReceiver);
+
+        Log.i(TAG, "END SEND");
+        return result;
+    }
+
     /**
      * Retrieves a list of supported GATT services on the connected device. This should be
      * invoked only after {@code BluetoothGatt#discoverServices()} completes successfully.
@@ -355,6 +452,12 @@ public class BluetoothLeService extends Service {
         if (mBluetoothGatt == null) return null;
 
         return mBluetoothGatt.getServices();
+    }
+
+    private static IntentFilter makeGattWriteFilter() {
+        final IntentFilter intentFilter = new IntentFilter();
+        intentFilter.addAction(ACTION_WRITE_RESPONSE_AVAILABLE);
+        return intentFilter;
     }
 
 
