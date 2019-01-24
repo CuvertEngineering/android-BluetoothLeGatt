@@ -152,7 +152,15 @@ public class DeviceControlActivity extends Activity {
                                 @Override
                                 public void run() {
                                     byte[] randomBytes = new byte[32000];
-                                    new Random().nextBytes(randomBytes);
+                                    int count = 0;
+                                    for (int i = 0; i < 8; i++) {
+                                        for (int j = 0; j < 4000; j++) {
+                                            int value = 65 + i;
+                                            randomBytes[count] = (byte)value;
+                                            count++;
+                                        }
+                                    }
+                                    //new Random().nextBytes(randomBytes);
                                     mBluetoothLeService.sendImage(characteristic,
                                             randomBytes);
                                 }
