@@ -26,10 +26,14 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
+import android.content.res.AssetFileDescriptor;
 import android.graphics.Bitmap;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.support.v4.content.LocalBroadcastManager;
+import android.support.v4.content.res.ResourcesCompat;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -38,6 +42,8 @@ import android.widget.Button;
 import android.widget.ExpandableListView;
 import android.widget.SimpleExpandableListAdapter;
 import android.widget.TextView;
+
+import org.apache.commons.io.IOUtils;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -151,18 +157,25 @@ public class DeviceControlActivity extends Activity {
                             Thread sendImageThread = new Thread(new Runnable() {
                                 @Override
                                 public void run() {
-                                    byte[] randomBytes = new byte[32000];
-                                    int count = 0;
-                                    for (int i = 0; i < 8; i++) {
-                                        for (int j = 0; j < 4000; j++) {
-                                            int value = 65 + i;
-                                            randomBytes[count] = (byte)value;
-                                            count++;
-                                        }
+
+                                    // this dynamically extends to take the bytes you read'
+                                    try {
+                                    InputStream is = getApplicationContext().getResources().openRawResource(R.raw.upslabel);
+                                    ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+
+                                    int nRead;
+                                    byte[] data = new byte[16384];
+
+                                    while ((nRead = is.read(data, 0, data.length)) != -1) {
+                                        buffer.write(data, 0, nRead);
                                     }
-                                    //new Random().nextBytes(randomBytes);
-                                    mBluetoothLeService.sendImage(characteristic,
-                                            randomBytes);
+
+                                     byte[] stuffw = buffer.toByteArray();
+                                     mBluetoothLeService.sendImage(characteristic,
+                                             stuffw);
+                                    } catch (Exception ex) {
+                                        Log.e(TAG, ex.getMessage());
+                                    }
                                 }
                             });
                             sendImageThread.start();
