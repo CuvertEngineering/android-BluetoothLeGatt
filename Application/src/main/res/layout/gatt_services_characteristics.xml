@@ -67,17 +67,17 @@
     </LinearLayout>
 
     <Button
-        android:id="@+id/logoSendBtn"
+        android:id="@+id/sendLabelBtn"
         android:layout_width="163dp"
         android:layout_height="wrap_content"
-        android:text="Send Logo"
+        android:text="Send Label"
         android:visibility="invisible" />
 
     <Button
-        android:id="@+id/imageSendBtn"
+        android:id="@+id/sendLogoBtn"
         android:layout_width="161dp"
         android:layout_height="wrap_content"
-        android:text="Send Image"
+        android:text="Send Logo"
         android:visibility="invisible" />
 
     <ExpandableListView

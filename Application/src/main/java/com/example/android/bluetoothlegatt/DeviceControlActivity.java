@@ -60,7 +60,7 @@ public class DeviceControlActivity extends Activity {
 
     private TextView mConnectionState;
     private TextView mDataField;
-    private Button mSendImageBtn;
+    private Button mSendLabelBtn;
     private Button mSendLogoBtn;
     private String mDeviceName;
     private String mDeviceAddress;
@@ -117,7 +117,7 @@ public class DeviceControlActivity extends Activity {
                 clearUI();
             } else if (BluetoothLeService.ACTION_GATT_SERVICES_DISCOVERED.equals(action)) {
                 // Show all the supported services and characteristics on the user interface.
-                mSendImageBtn.setVisibility(View.VISIBLE);
+                mSendLabelBtn.setVisibility(View.VISIBLE);
                 mSendLogoBtn.setVisibility(View.VISIBLE);
                 displayGattServices(mBluetoothLeService.getSupportedGattServices());
             } else if (BluetoothLeService.ACTION_DATA_AVAILABLE.equals(action)) {
@@ -221,7 +221,7 @@ public class DeviceControlActivity extends Activity {
     private void clearUI() {
         mGattServicesList.setAdapter((SimpleExpandableListAdapter) null);
         mDataField.setText(R.string.no_data);
-        mSendImageBtn.setVisibility(View.GONE);
+        mSendLabelBtn.setVisibility(View.GONE);
         mSendLogoBtn.setVisibility(View.GONE);
     }
 
@@ -240,8 +240,8 @@ public class DeviceControlActivity extends Activity {
         mGattServicesList.setOnChildClickListener(servicesListClickListner);
         mConnectionState = (TextView) findViewById(R.id.connection_state);
         mDataField = (TextView) findViewById(R.id.data_value);
-        mSendImageBtn = (Button) findViewById(R.id.imageSendBtn);
-        mSendLogoBtn = (Button) findViewById(R.id.logoSendBtn);
+        mSendLabelBtn = (Button) findViewById(R.id.sendLabelBtn);
+        mSendLogoBtn = (Button) findViewById(R.id.sendLogoBtn);
 
         setupUICallbacks();
         setupListeners();
@@ -328,14 +328,14 @@ public class DeviceControlActivity extends Activity {
         mSendLogoBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                    sendToEpaper(R.raw.logos);
+                    sendToEpaper(R.raw.logo);
             }
         });
 
-        mSendImageBtn.setOnClickListener(new View.OnClickListener() {
+        mSendLabelBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                sendToEpaper(R.raw.ups_culvert_logo);
+                sendToEpaper(R.raw.label);
             }
         });
 
