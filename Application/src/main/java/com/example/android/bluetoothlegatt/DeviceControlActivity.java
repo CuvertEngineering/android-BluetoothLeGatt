@@ -17,7 +17,6 @@
 package com.example.android.bluetoothlegatt;
 
 import android.app.Activity;
-import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattService;
 import android.content.BroadcastReceiver;
@@ -26,14 +25,9 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
-import android.content.res.AssetFileDescriptor;
-import android.graphics.Bitmap;
-import android.graphics.drawable.BitmapDrawable;
-import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.support.v4.content.LocalBroadcastManager;
-import android.support.v4.content.res.ResourcesCompat;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -43,24 +37,14 @@ import android.widget.ExpandableListView;
 import android.widget.SimpleExpandableListAdapter;
 import android.widget.TextView;
 
-import org.apache.commons.io.IOUtils;
-
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.ByteBuffer;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Random;
 import java.util.UUID;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.CyclicBarrier;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.atomic.AtomicBoolean;
-
-import static com.example.android.bluetoothlegatt.BluetoothLeService.ACTION_WRITE_RESPONSE_AVAILABLE;
 
 /**
  * For a given BLE device, this Activity provides the user interface to connect, display data,
@@ -77,6 +61,7 @@ public class DeviceControlActivity extends Activity {
     private TextView mConnectionState;
     private TextView mDataField;
     private Button mSendImageBtn;
+    private Button mSendLogoBtn;
     private String mDeviceName;
     private String mDeviceAddress;
     private ExpandableListView mGattServicesList;
@@ -132,12 +117,68 @@ public class DeviceControlActivity extends Activity {
                 clearUI();
             } else if (BluetoothLeService.ACTION_GATT_SERVICES_DISCOVERED.equals(action)) {
                 // Show all the supported services and characteristics on the user interface.
+                mSendImageBtn.setVisibility(View.VISIBLE);
+                mSendLogoBtn.setVisibility(View.VISIBLE);
                 displayGattServices(mBluetoothLeService.getSupportedGattServices());
             } else if (BluetoothLeService.ACTION_DATA_AVAILABLE.equals(action)) {
                 displayData(intent.getStringExtra(BluetoothLeService.EXTRA_DATA));
             }
         }
     };
+
+    private void sendToEpaper(final int resourceID){
+        Thread sendImageThread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+
+                // this dynamically extends to take the bytes you read'
+                try {
+
+                    BluetoothGattCharacteristic characteristic =
+                            mBluetoothLeService.getCharacteristic(UUID.fromString(WRITE_UUID));
+                    if (characteristic != null) {
+
+                        String text_data = "";
+                        InputStream inputStream = getApplicationContext().getResources().openRawResource(resourceID);
+                        InputStreamReader inputreader = new InputStreamReader(inputStream);
+                        BufferedReader buffreader = new BufferedReader(inputreader);
+                        String line;
+                        StringBuilder text = new StringBuilder();
+                        String finalString;
+
+                        try {
+                            while ((line = buffreader.readLine()) != null) {
+                                text.append(line);
+                                text.append('\n');
+                            }
+                        } catch (IOException e) {
+                            Log.e(TAG, e.getMessage());
+                        }
+
+                        finalString = text.toString().replaceAll(" ", "");
+                        finalString = finalString.replaceAll(",", "");
+                        finalString = finalString.replaceAll("0x", "");
+                        finalString = finalString.replace("\n", "").replace("\r", "");
+                        byte[] array = hexStringToByteArray(finalString);
+                        int length = array.length;
+
+                                        /*
+                                        String[] data = finalString.toString().split(",");
+                                        for (int i = 0; i < data.length; i++) {
+                                            byte[] decoded = Hex.decodeHex(data[0]);
+                                            Log.i(TAG, Byte.toString(decoded[0]));
+                                        }*/
+
+                        //byte[] stuffw = buffer.toByteArray();
+                        mBluetoothLeService.sendImage(characteristic, array);
+                    }
+                } catch (Exception ex) {
+                    Log.e(TAG, ex.getMessage());
+                }
+            }
+        });
+        sendImageThread.start();
+    }
 
     // If a given GATT characteristic is selected, check for supported features.  This sample
     // demonstrates 'Read' and 'Notify' features.  See
@@ -154,31 +195,6 @@ public class DeviceControlActivity extends Activity {
                         final int charaProp = characteristic.getProperties();
                         if (characteristic.getUuid().toString().contains(WRITE_UUID)) {
                             Log.i(TAG, "Found the correct characteristic");
-                            Thread sendImageThread = new Thread(new Runnable() {
-                                @Override
-                                public void run() {
-
-                                    // this dynamically extends to take the bytes you read'
-                                    try {
-                                    InputStream is = getApplicationContext().getResources().openRawResource(R.raw.upslabel);
-                                    ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-
-                                    int nRead;
-                                    byte[] data = new byte[16384];
-
-                                    while ((nRead = is.read(data, 0, data.length)) != -1) {
-                                        buffer.write(data, 0, nRead);
-                                    }
-
-                                     byte[] stuffw = buffer.toByteArray();
-                                     mBluetoothLeService.sendImage(characteristic,
-                                             stuffw);
-                                    } catch (Exception ex) {
-                                        Log.e(TAG, ex.getMessage());
-                                    }
-                                }
-                            });
-                            sendImageThread.start();
                         }
                         /*
                         if ((charaProp | BluetoothGattCharacteristic.PROPERTY_READ) > 0) {
@@ -200,11 +216,13 @@ public class DeviceControlActivity extends Activity {
                     }
                     return false;
                 }
-    };
+            };
 
     private void clearUI() {
         mGattServicesList.setAdapter((SimpleExpandableListAdapter) null);
         mDataField.setText(R.string.no_data);
+        mSendImageBtn.setVisibility(View.GONE);
+        mSendLogoBtn.setVisibility(View.GONE);
     }
 
     @Override
@@ -222,11 +240,11 @@ public class DeviceControlActivity extends Activity {
         mGattServicesList.setOnChildClickListener(servicesListClickListner);
         mConnectionState = (TextView) findViewById(R.id.connection_state);
         mDataField = (TextView) findViewById(R.id.data_value);
-        mSendImageBtn = (Button) findViewById(R.id.sendImage);
-
-        //mSendImageRunnable = new SendImageRunnable(mBluetoothLeService);
+        mSendImageBtn = (Button) findViewById(R.id.imageSendBtn);
+        mSendLogoBtn = (Button) findViewById(R.id.logoSendBtn);
 
         setupUICallbacks();
+        setupListeners();
 
         mLocalBroadcastManager = LocalBroadcastManager.getInstance(getApplicationContext());
         getActionBar().setTitle(mDeviceName);
@@ -273,7 +291,7 @@ public class DeviceControlActivity extends Activity {
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        switch(item.getItemId()) {
+        switch (item.getItemId()) {
             case R.id.menu_connect:
                 mBluetoothLeService.connect(mDeviceAddress);
                 return true;
@@ -287,29 +305,8 @@ public class DeviceControlActivity extends Activity {
         return super.onOptionsItemSelected(item);
     }
 
-
-
-    /*
-    private class SendImageRunnable implements Runnable {
-
-        private BluetoothLeService mBluetoothLeService;
-        private BluetoothGattCharacteristic mBluetoothGattChar;
-
-        private SendImageRunnable(BluetoothLeService bluetoothLeService, BluetoothGattCharacteristic bluetoothGattChar) {
-            super();
-            mBluetoothLeService = bluetoothLeService;
-            mBluetoothGattChar = bluetoothGattChar;
-        }
-
-        @Override
-        public void run() {
-            byte[] randomBytes = new byte[32000];
-            new Random().nextBytes(randomBytes);
-            //sendImage(mBluetoothGattChar, randomBytes);
-        }
-    }*/
-
     private void setupUICallbacks() {
+
     }
 
     private void updateConnectionState(final int resourceId) {
@@ -325,6 +322,23 @@ public class DeviceControlActivity extends Activity {
         if (data != null) {
             mDataField.setText(data);
         }
+    }
+
+    private void setupListeners(){
+        mSendLogoBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                    sendToEpaper(R.raw.logos);
+            }
+        });
+
+        mSendImageBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                sendToEpaper(R.raw.ups_culvert_logo);
+            }
+        });
+
     }
 
     // Demonstrates how to iterate through the supported GATT Services/Characteristics.
@@ -374,12 +388,12 @@ public class DeviceControlActivity extends Activity {
                 this,
                 gattServiceData,
                 android.R.layout.simple_expandable_list_item_2,
-                new String[] {LIST_NAME, LIST_UUID},
-                new int[] { android.R.id.text1, android.R.id.text2 },
+                new String[]{LIST_NAME, LIST_UUID},
+                new int[]{android.R.id.text1, android.R.id.text2},
                 gattCharacteristicData,
                 android.R.layout.simple_expandable_list_item_2,
-                new String[] {LIST_NAME, LIST_UUID},
-                new int[] { android.R.id.text1, android.R.id.text2 }
+                new String[]{LIST_NAME, LIST_UUID},
+                new int[]{android.R.id.text1, android.R.id.text2}
         );
         mGattServicesList.setAdapter(gattServiceAdapter);
     }
@@ -392,5 +406,15 @@ public class DeviceControlActivity extends Activity {
         intentFilter.addAction(BluetoothLeService.ACTION_GATT_SERVICES_DISCOVERED);
         intentFilter.addAction(BluetoothLeService.ACTION_DATA_AVAILABLE);
         return intentFilter;
+    }
+
+    public static byte[] hexStringToByteArray(String s) {
+        int len = s.length();
+        byte[] data = new byte[len / 2];
+        for (int i = 0; i < len; i += 2) {
+            data[i / 2] = (byte) ((Character.digit(s.charAt(i), 16) << 4)
+                    + Character.digit(s.charAt(i + 1), 16));
+        }
+        return data;
     }
 }

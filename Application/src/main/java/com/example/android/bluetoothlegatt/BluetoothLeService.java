@@ -597,11 +597,19 @@ public class BluetoothLeService extends Service {
         }
 
         //TODO = change MTU to 100
+        /*
         if (!requestMTUsize((byte)20)) {
             Log.e(TAG, "Unable to set MTU size");
             return false;
         }
 
+        try {
+            Thread.sleep(4000);
+        } catch (Exception ex) {
+            Log.e(TAG, ex.getMessage());
+        }*/
+
+        Log.i(TAG, "START END");
 
         CHR_RAW.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE);
         CHR_CHK.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE);
@@ -612,6 +620,7 @@ public class BluetoothLeService extends Service {
                 while (inputStream.read(byteChunkArray) != -1) {
                     Log.i(TAG, "Reading 4K byte chunk");
                     //TODO = implement retry mechanism
+                    //TODO = Check to see how many bytes I got.
 
                     byte[] mtuChunk = new byte[20];
                     chunkStream = new ByteArrayInputStream(byteChunkArray);
@@ -712,7 +721,7 @@ public class BluetoothLeService extends Service {
         return mBluetoothGatt.getServices();
     }
 
-    private BluetoothGattCharacteristic getCharacteristic(UUID uuid) {
+    public BluetoothGattCharacteristic getCharacteristic(UUID uuid) {
         List<BluetoothGattService> services = getSupportedGattServices();
         if (services == null) return null;
 
