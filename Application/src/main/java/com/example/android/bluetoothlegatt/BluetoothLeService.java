@@ -115,6 +115,11 @@ public class BluetoothLeService extends Service {
         public void onServicesDiscovered(BluetoothGatt gatt, int status) {
             if (status == BluetoothGatt.GATT_SUCCESS) {
                 broadcastUpdate(ACTION_GATT_SERVICES_DISCOVERED);
+                gatt.requestMtu(256);
+                gatt.requestConnectionPriority(BluetoothGatt.CONNECTION_PRIORITY_HIGH);
+                gatt.setPreferredPhy(BluetoothDevice.PHY_LE_2M,
+                        BluetoothDevice.PHY_LE_2M,
+                        BluetoothDevice.PHY_OPTION_NO_PREFERRED);
             } else {
                 Log.w(TAG, "onServicesDiscovered received: " + status);
             }
@@ -150,7 +155,7 @@ public class BluetoothLeService extends Service {
         public void onMtuChanged(BluetoothGatt gatt, int mtu, int status) {
             super.onMtuChanged(gatt, mtu, status);
             if (status == BluetoothGatt.GATT_SUCCESS) {
-
+                Log.d(TAG, String.format("MTU set to %s", mtu));
             }
         }
     };
@@ -344,7 +349,7 @@ public class BluetoothLeService extends Service {
         return mBluetoothGatt.requestConnectionPriority(BluetoothGatt.CONNECTION_PRIORITY_HIGH);
     }
 
-    public boolean requestMTUsize(byte mtuSize) {
+    public boolean requestMTUsize(int mtuSize) {
         if (mBluetoothAdapter == null || mBluetoothGatt == null) {
             Log.w(TAG, "BluetoothAdapter not initialized");
             return false;

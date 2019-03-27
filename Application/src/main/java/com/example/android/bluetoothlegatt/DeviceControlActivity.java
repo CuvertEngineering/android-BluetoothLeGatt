@@ -175,7 +175,7 @@ public class DeviceControlActivity extends Activity {
                                     byte[] responseByteArr = readChar.getValue();
                                     try {
                                         String responseString = new String(responseByteArr, "UTF-8");
-                                        Log.i(TAG+"BLE_STRM", responseString);
+                                        Log.i(TAG+" BLE_STRM", responseString);
                                     } catch (UnsupportedEncodingException uex) {
                                         Log.e(TAG, uex.getMessage());
                                     }
