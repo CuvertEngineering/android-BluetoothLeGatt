@@ -25,6 +25,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.support.v4.content.LocalBroadcastManager;
@@ -41,10 +42,12 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * For a given BLE device, this Activity provides the user interface to connect, display data,
@@ -62,6 +65,7 @@ public class DeviceControlActivity extends Activity {
     private TextView mDataField;
     private Button mSendLabelBtn;
     private Button mSendLogoBtn;
+    private Button mStreamingBtn;
     private String mDeviceName;
     private String mDeviceAddress;
     private ExpandableListView mGattServicesList;
@@ -71,10 +75,12 @@ public class DeviceControlActivity extends Activity {
     private boolean mConnected = false;
     private BluetoothGattCharacteristic mNotifyCharacteristic;
     private LocalBroadcastManager mLocalBroadcastManager;
+    private StreamReadRunnable mReadStreamRunnable = null;
 
     private final String LIST_NAME = "NAME";
     private final String LIST_UUID = "UUID";
     private final String WRITE_UUID = "6e400002-b5a3-f393-e0a9-e50e24dcca9e";
+    private final String STREAMING_READ_UUID = "5c3a659e-897e-45e1-b016-007107c96df6";
 
     // Code to manage Service lifecycle.
     private final ServiceConnection mServiceConnection = new ServiceConnection() {
@@ -93,6 +99,9 @@ public class DeviceControlActivity extends Activity {
         @Override
         public void onServiceDisconnected(ComponentName componentName) {
             mBluetoothLeService = null;
+            if (mReadStreamRunnable != null) {
+                mReadStreamRunnable.cancelStream();
+            }
         }
     };
 
@@ -119,6 +128,7 @@ public class DeviceControlActivity extends Activity {
                 // Show all the supported services and characteristics on the user interface.
                 mSendLabelBtn.setVisibility(View.VISIBLE);
                 mSendLogoBtn.setVisibility(View.VISIBLE);
+                mStreamingBtn.setVisibility(View.VISIBLE);
                 displayGattServices(mBluetoothLeService.getSupportedGattServices());
             } else if (BluetoothLeService.ACTION_DATA_AVAILABLE.equals(action)) {
                 displayData(intent.getStringExtra(BluetoothLeService.EXTRA_DATA));
@@ -126,9 +136,68 @@ public class DeviceControlActivity extends Activity {
         }
     };
 
+    private void readBLEStream() {
+        if (mReadStreamRunnable == null) {
+            Log.d(TAG, "Stream start");
+            mStreamingBtn.setText(R.string.menu_stop);
+            mReadStreamRunnable = new StreamReadRunnable(UUID.fromString(STREAMING_READ_UUID));
+            mReadStreamRunnable.run();
+        } else {
+            Log.d(TAG, "Stream stop");
+            mReadStreamRunnable.cancelStream();
+            mReadStreamRunnable = null;
+            mStreamingBtn.setText(R.string.stream_read_start);
+        }
+    }
+    private class StreamReadRunnable implements Runnable {
+
+        private AtomicBoolean mStopStreaming = new AtomicBoolean(false);
+        private UUID mReadCharUUID;
+
+        StreamReadRunnable(UUID readCharUUID) {
+            mReadCharUUID = readCharUUID;
+        }
+
+        void cancelStream() {
+            mStopStreaming.set(true);
+        }
+
+        @Override
+        public void run() {
+            new Thread() {
+                public void run() {
+                    if (mBluetoothLeService != null) {
+                        BluetoothGattCharacteristic readChar =
+                                mBluetoothLeService.getCharacteristic((mReadCharUUID));
+                        if (readChar != null) {
+                            while (!mStopStreaming.get()) {
+                                if (mBluetoothLeService.readBytes(readChar)) {
+                                    byte[] responseByteArr = readChar.getValue();
+                                    try {
+                                        String responseString = new String(responseByteArr, "UTF-8");
+                                        Log.i(TAG+"BLE_STRM", responseString);
+                                    } catch (UnsupportedEncodingException uex) {
+                                        Log.e(TAG, uex.getMessage());
+                                    }
+                                } else {
+                                    Log.e(TAG, "Failed to read bytes");
+                                }
+                            }
+                            Log.i(TAG, "Streaming stopped");
+                        } else {
+                            Log.e(TAG, "No matching characteristic found");
+                        }
+                    } else {
+                        Log.e(TAG, "Bluetooth service is null, exiting stream");
+                    }
+                }
+            }.start();
+        }
+    }
+
     private void sendToEpaper(final int resourceID){
         Thread sendImageThread = new Thread(new Runnable() {
-            @Override
+                @Override
             public void run() {
 
                 // this dynamically extends to take the bytes you read'
@@ -223,6 +292,7 @@ public class DeviceControlActivity extends Activity {
         mDataField.setText(R.string.no_data);
         mSendLabelBtn.setVisibility(View.GONE);
         mSendLogoBtn.setVisibility(View.GONE);
+        mStreamingBtn.setVisibility(View.GONE);
     }
 
     @Override
@@ -242,6 +312,7 @@ public class DeviceControlActivity extends Activity {
         mDataField = (TextView) findViewById(R.id.data_value);
         mSendLabelBtn = (Button) findViewById(R.id.sendLabelBtn);
         mSendLogoBtn = (Button) findViewById(R.id.sendLogoBtn);
+        mStreamingBtn = (Button) findViewById(R.id.startStrmBtn);
 
         setupUICallbacks();
         setupListeners();
@@ -331,14 +402,18 @@ public class DeviceControlActivity extends Activity {
                     sendToEpaper(R.raw.logo);
             }
         });
-
         mSendLabelBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 sendToEpaper(R.raw.label);
             }
         });
-
+        mStreamingBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                readBLEStream();
+            }
+        });
     }
 
     // Demonstrates how to iterate through the supported GATT Services/Characteristics.

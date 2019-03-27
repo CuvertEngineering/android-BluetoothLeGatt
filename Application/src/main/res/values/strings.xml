@@ -33,4 +33,6 @@
     <string name="menu_disconnect">Disconnect</string>
     <string name="menu_scan">Scan</string>
     <string name="menu_stop">Stop</string>
+    <string name="stream_read_start">Start Streaming</string>
+    <string name="stream_read_stop">Stop Streaming</string>
 </resources>

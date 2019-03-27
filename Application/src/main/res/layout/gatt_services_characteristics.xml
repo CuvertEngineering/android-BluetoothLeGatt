@@ -80,6 +80,13 @@
         android:text="Send Logo"
         android:visibility="invisible" />
 
+    <Button
+        android:id="@+id/startStrmBtn"
+        android:layout_width="163dp"
+        android:layout_height="wrap_content"
+        android:text="Start Stream"
+        android:visibility="invisible" />
+
     <ExpandableListView
         android:id="@+id/gatt_services_list"
         android:layout_width="match_parent"

@@ -476,7 +476,7 @@ public class BluetoothLeService extends Service {
     }
 
     //TODO = Support multi-threading
-    private boolean readBytes(final BluetoothGattCharacteristic gattCharacteristic) {
+    boolean readBytes(final BluetoothGattCharacteristic gattCharacteristic) {
         final BluetoothCommandLock _mutex = new BluetoothCommandLock(0);
         final AtomicBoolean result = new AtomicBoolean(false);
 
