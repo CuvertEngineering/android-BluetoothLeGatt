@@ -449,7 +449,7 @@ public class BluetoothLeService extends Service {
         return result.get();
     }
 
-    private boolean writeBytes(BluetoothGattCharacteristic gattCharacteristic, byte[] bytes) {
+    boolean writeBytes(BluetoothGattCharacteristic gattCharacteristic, byte[] bytes) {
         final BluetoothCommandLock _mutex = new BluetoothCommandLock(0);
         final AtomicBoolean result = new AtomicBoolean(false);
 

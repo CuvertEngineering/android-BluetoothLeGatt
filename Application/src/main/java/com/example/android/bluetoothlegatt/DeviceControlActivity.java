@@ -62,7 +62,12 @@ public class DeviceControlActivity extends Activity {
 
     public static final String EXTRAS_DEVICE_NAME = "DEVICE_NAME";
     public static final String EXTRAS_DEVICE_ADDRESS = "DEVICE_ADDRESS";
-
+    Long ts_curr_Long = 0L;
+    Long ts_prev_Long = 0L;
+    Long samp_per_sec_av = 0L;
+    int reads = 0;
+    int sample_number_Int = 0;
+    int sample_number_prev = 0;
     private TextView mConnectionState;
     private TextView mDataField;
     private TextView mSampleField;
@@ -85,6 +90,7 @@ public class DeviceControlActivity extends Activity {
     private final String LIST_UUID = "UUID";
     private final String WRITE_UUID = "6e400002-b5a3-f393-e0a9-e50e24dcca9e";
     private final String STREAMING_READ_UUID = "5c3a659e-897e-45e1-b016-007107c96df6";
+    private final String STREAMING_START_UUID ="5c3a659e-897e-45e1-b016-007107c96df7";
 
     // Code to manage Service lifecycle.
     private final ServiceConnection mServiceConnection = new ServiceConnection() {
@@ -141,6 +147,41 @@ public class DeviceControlActivity extends Activity {
         }
     };
 
+    private void sendstart() {
+        new Thread() {
+            public void run() {
+                BluetoothGattCharacteristic characteristic;
+
+                do {
+                    characteristic = mBluetoothLeService.getCharacteristic(UUID.fromString(STREAMING_START_UUID));
+                    if (characteristic != null) {
+                        byte[] cmd = new byte[1];
+                        cmd[0] = 1;
+                        mBluetoothLeService.writeBytes(characteristic, cmd);
+                    }
+                }while(characteristic == null);
+            }
+        }.start();
+    }
+
+    private void sendstop() {
+        new Thread() {
+            public void run() {
+                BluetoothGattCharacteristic characteristic;
+
+                do {
+                    characteristic = mBluetoothLeService.getCharacteristic(UUID.fromString(STREAMING_START_UUID));
+                    if (characteristic != null) {
+                        byte[] cmd = new byte[1];
+                        cmd[0] = 1;
+                        mBluetoothLeService.writeBytes(characteristic, cmd);
+                        // Don't know why the first one isn't seen...
+                        mBluetoothLeService.writeBytes(characteristic, cmd);
+                    }
+                }while(characteristic == null);
+            }
+        }.start();
+    }
     private void readPacket() {
         if (mBluetoothLeService != null) {
             BluetoothGattCharacteristic readChar =
@@ -148,15 +189,23 @@ public class DeviceControlActivity extends Activity {
             if (readChar != null) {
                 if (mBluetoothLeService.readBytes(readChar)) {
                     byte[] responseByteArr = readChar.getValue();
-                    ByteBuffer buffer = ByteBuffer.wrap(responseByteArr, 4, 4).order(ByteOrder.LITTLE_ENDIAN);
-                    int item = buffer.getInt();
-                    Log.i(TAG, "sample number= " + Long.toString(item));
-                    mSampleField.setText("Sample: " + Long.toString(item));
-                    try {
-                        String responseString = new String(responseByteArr, "UTF-8");
-                        Log.i(TAG + " BLE_STRM", responseString);
-                    } catch (UnsupportedEncodingException uex) {
-                        Log.e(TAG, uex.getMessage());
+                    if (responseByteArr.length > 6) {
+                        ByteBuffer buffer = ByteBuffer.wrap(responseByteArr, 5, 4).order(ByteOrder.LITTLE_ENDIAN);
+                        sample_number_Int = buffer.getInt();
+                        Log.i(TAG, "sample number= " + Long.toString(sample_number_Int));
+                        ts_curr_Long = System.currentTimeMillis();
+                        Long samp_per_sec = (sample_number_Int - sample_number_prev)*1000/(ts_curr_Long-ts_prev_Long);
+                        samp_per_sec_av = samp_per_sec_av + samp_per_sec;
+                        reads = reads + 1;
+                        Log.i(TAG + " > " ,Integer.toString(sample_number_Int));
+                        Log.i(TAG + " --------> " ,Long.toString(ts_curr_Long));
+                        if (reads >= 10) {
+                            mSampleField.setText("rate: " + Long.toString(samp_per_sec_av/reads));
+                            samp_per_sec_av = 0L;
+                            reads = 0;
+                        }
+                        sample_number_prev = sample_number_Int;
+                        ts_prev_Long = ts_curr_Long;
                     }
                 } else {
                     Log.e(TAG, "Failed to read bytes");
@@ -178,7 +227,9 @@ public class DeviceControlActivity extends Activity {
         }.start();
     }
     private void readBLEStream() {
+
         if (mReadStreamRunnable == null) {
+            sendstart();
             Log.d(TAG, "Stream start");
             mStreamingBtn.setText(R.string.menu_stop);
             mReadStreamRunnable = new StreamReadRunnable(UUID.fromString(STREAMING_READ_UUID));
@@ -188,6 +239,7 @@ public class DeviceControlActivity extends Activity {
             mReadStreamRunnable.cancelStream();
             mReadStreamRunnable = null;
             mStreamingBtn.setText(R.string.stream_read_start);
+            sendstop();
         }
     }
     private class StreamReadRunnable implements Runnable {
@@ -313,6 +365,8 @@ public class DeviceControlActivity extends Activity {
         mSendLabelBtn.setVisibility(View.GONE);
         mSendLogoBtn.setVisibility(View.GONE);
         mStreamingBtn.setVisibility(View.GONE);
+        mReadSingleBtn.setVisibility(View.GONE);
+        mSampleField.setText("-");
     }
 
     @Override
