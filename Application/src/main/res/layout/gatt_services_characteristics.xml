@@ -68,24 +68,37 @@
 
     <Button
         android:id="@+id/sendLabelBtn"
-        android:layout_width="163dp"
+        android:layout_width="187dp"
         android:layout_height="wrap_content"
         android:text="Send Label"
         android:visibility="invisible" />
 
     <Button
         android:id="@+id/sendLogoBtn"
-        android:layout_width="161dp"
+        android:layout_width="187dp"
         android:layout_height="wrap_content"
         android:text="Send Logo"
         android:visibility="invisible" />
 
     <Button
+        android:id="@+id/singleReadBtn"
+        android:layout_width="187dp"
+        android:layout_height="wrap_content"
+        android:text="Single Read"
+        android:visibility="invisible" />
+
+    <Button
         android:id="@+id/startStrmBtn"
-        android:layout_width="163dp"
+        android:layout_width="187dp"
         android:layout_height="wrap_content"
         android:text="Start Stream"
         android:visibility="invisible" />
+
+    <TextView
+        android:id="@+id/sampleNumTxt"
+        android:layout_width="160dp"
+        android:layout_height="wrap_content"
+        android:text="Sample: 0" />
 
     <ExpandableListView
         android:id="@+id/gatt_services_list"

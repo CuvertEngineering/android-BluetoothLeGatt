@@ -43,6 +43,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -63,9 +65,11 @@ public class DeviceControlActivity extends Activity {
 
     private TextView mConnectionState;
     private TextView mDataField;
+    private TextView mSampleField;
     private Button mSendLabelBtn;
     private Button mSendLogoBtn;
     private Button mStreamingBtn;
+    private Button mReadSingleBtn;
     private String mDeviceName;
     private String mDeviceAddress;
     private ExpandableListView mGattServicesList;
@@ -129,6 +133,7 @@ public class DeviceControlActivity extends Activity {
                 mSendLabelBtn.setVisibility(View.VISIBLE);
                 mSendLogoBtn.setVisibility(View.VISIBLE);
                 mStreamingBtn.setVisibility(View.VISIBLE);
+                mReadSingleBtn.setVisibility(View.VISIBLE);
                 displayGattServices(mBluetoothLeService.getSupportedGattServices());
             } else if (BluetoothLeService.ACTION_DATA_AVAILABLE.equals(action)) {
                 displayData(intent.getStringExtra(BluetoothLeService.EXTRA_DATA));
@@ -136,6 +141,42 @@ public class DeviceControlActivity extends Activity {
         }
     };
 
+    private void readPacket() {
+        if (mBluetoothLeService != null) {
+            BluetoothGattCharacteristic readChar =
+                    mBluetoothLeService.getCharacteristic((UUID.fromString(STREAMING_READ_UUID)));
+            if (readChar != null) {
+                if (mBluetoothLeService.readBytes(readChar)) {
+                    byte[] responseByteArr = readChar.getValue();
+                    ByteBuffer buffer = ByteBuffer.wrap(responseByteArr, 4, 4).order(ByteOrder.LITTLE_ENDIAN);
+                    int item = buffer.getInt();
+                    Log.i(TAG, "sample number= " + Long.toString(item));
+                    mSampleField.setText("Sample: " + Long.toString(item));
+                    try {
+                        String responseString = new String(responseByteArr, "UTF-8");
+                        Log.i(TAG + " BLE_STRM", responseString);
+                    } catch (UnsupportedEncodingException uex) {
+                        Log.e(TAG, uex.getMessage());
+                    }
+                } else {
+                    Log.e(TAG, "Failed to read bytes");
+                }
+                Log.i(TAG, "Streaming stopped");
+            } else {
+                Log.e(TAG, "No matching characteristic found");
+            }
+        } else {
+            Log.e(TAG, "Bluetooth service is null, exiting stream");
+        }
+    }
+
+    private void readBLESingle() {
+        new Thread() {
+            public void run() {
+                readPacket();
+            }
+        }.start();
+    }
     private void readBLEStream() {
         if (mReadStreamRunnable == null) {
             Log.d(TAG, "Stream start");
@@ -166,29 +207,8 @@ public class DeviceControlActivity extends Activity {
         public void run() {
             new Thread() {
                 public void run() {
-                    if (mBluetoothLeService != null) {
-                        BluetoothGattCharacteristic readChar =
-                                mBluetoothLeService.getCharacteristic((mReadCharUUID));
-                        if (readChar != null) {
-                            while (!mStopStreaming.get()) {
-                                if (mBluetoothLeService.readBytes(readChar)) {
-                                    byte[] responseByteArr = readChar.getValue();
-                                    try {
-                                        String responseString = new String(responseByteArr, "UTF-8");
-                                        Log.i(TAG+" BLE_STRM", responseString);
-                                    } catch (UnsupportedEncodingException uex) {
-                                        Log.e(TAG, uex.getMessage());
-                                    }
-                                } else {
-                                    Log.e(TAG, "Failed to read bytes");
-                                }
-                            }
-                            Log.i(TAG, "Streaming stopped");
-                        } else {
-                            Log.e(TAG, "No matching characteristic found");
-                        }
-                    } else {
-                        Log.e(TAG, "Bluetooth service is null, exiting stream");
+                    while(!mStopStreaming.get()){
+                        readPacket();
                     }
                 }
             }.start();
@@ -310,10 +330,11 @@ public class DeviceControlActivity extends Activity {
         mGattServicesList.setOnChildClickListener(servicesListClickListner);
         mConnectionState = (TextView) findViewById(R.id.connection_state);
         mDataField = (TextView) findViewById(R.id.data_value);
+        mSampleField = (TextView) findViewById(R.id.sampleNumTxt);
         mSendLabelBtn = (Button) findViewById(R.id.sendLabelBtn);
         mSendLogoBtn = (Button) findViewById(R.id.sendLogoBtn);
         mStreamingBtn = (Button) findViewById(R.id.startStrmBtn);
-
+        mReadSingleBtn = (Button) findViewById(R.id.singleReadBtn);
         setupUICallbacks();
         setupListeners();
 
@@ -412,6 +433,12 @@ public class DeviceControlActivity extends Activity {
             @Override
             public void onClick(View view) {
                 readBLEStream();
+            }
+        });
+        mReadSingleBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                readBLESingle();
             }
         });
     }
