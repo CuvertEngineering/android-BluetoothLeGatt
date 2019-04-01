@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:scaleType="fitCenter"
+    android:background="@drawable/heimdallr_background">
+
+    <Button
+        android:id="@+id/getRegisterBtn"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:text="Get Registers" />
+
+    <View
+        android:id="@+id/divider2"
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentEnd="true"
+        android:layout_marginTop="80dp"
+        android:layout_marginEnd="0dp"
+        android:background="?android:attr/listDivider" />
+
+    <EditText
+        android:id="@+id/regTxt"
+        android:layout_width="match_parent"
+        android:layout_height="646dp"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentTop="true"
+        android:layout_marginStart="0dp"
+        android:layout_marginTop="85dp"
+        android:ems="10"
+        android:inputType="textMultiLine"
+        android:maxLines="30"
+        android:scrollbars="vertical" />
+
+</RelativeLayout>

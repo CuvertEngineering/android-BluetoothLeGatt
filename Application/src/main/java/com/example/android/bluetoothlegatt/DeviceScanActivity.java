@@ -26,6 +26,7 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.Handler;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -191,8 +192,13 @@ public class DeviceScanActivity extends ListActivity {
         }
 
         public void addDevice(BluetoothDevice device) {
+            final String deviceName = device.getName();
             if(!mLeDevices.contains(device)) {
-                mLeDevices.add(device);
+                if(deviceName != null){
+                    if(deviceName.contains("Heimdallr")) {
+                        mLeDevices.add(device);
+                    }
+                }
             }
         }
 
@@ -232,7 +238,6 @@ public class DeviceScanActivity extends ListActivity {
             } else {
                 viewHolder = (ViewHolder) view.getTag();
             }
-
             BluetoothDevice device = mLeDevices.get(i);
             final String deviceName = device.getName();
             if (deviceName != null && deviceName.length() > 0)

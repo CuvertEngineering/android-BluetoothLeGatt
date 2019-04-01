@@ -38,6 +38,9 @@ import android.widget.ExpandableListView;
 import android.widget.SimpleExpandableListAdapter;
 import android.widget.TextView;
 
+
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -71,14 +74,14 @@ public class DeviceControlActivity extends Activity {
     private TextView mConnectionState;
     private TextView mDataField;
     private TextView mSampleField;
-    private Button mSendLabelBtn;
-    private Button mSendLogoBtn;
     private Button mStreamingBtn;
     private Button mReadSingleBtn;
+    private Button mRegBtn;
     private String mDeviceName;
     private String mDeviceAddress;
-    private ExpandableListView mGattServicesList;
-    private BluetoothLeService mBluetoothLeService;
+    private boolean mIsImpedance = false;
+    BlockingQueue<byte[]> dataQueue = new LinkedBlockingQueue<>(10000);
+    public BluetoothLeService mBluetoothLeService;
     private ArrayList<ArrayList<BluetoothGattCharacteristic>> mGattCharacteristics =
             new ArrayList<ArrayList<BluetoothGattCharacteristic>>();
     private boolean mConnected = false;
@@ -86,11 +89,14 @@ public class DeviceControlActivity extends Activity {
     private LocalBroadcastManager mLocalBroadcastManager;
     private StreamReadRunnable mReadStreamRunnable = null;
 
+    // private Buffer dataBuff = new CircularFifoBuffer(500);
+
     private final String LIST_NAME = "NAME";
     private final String LIST_UUID = "UUID";
     private final String WRITE_UUID = "6e400002-b5a3-f393-e0a9-e50e24dcca9e";
     private final String STREAMING_READ_UUID = "5c3a659e-897e-45e1-b016-007107c96df6";
     private final String STREAMING_START_UUID ="5c3a659e-897e-45e1-b016-007107c96df7";
+
 
     // Code to manage Service lifecycle.
     private final ServiceConnection mServiceConnection = new ServiceConnection() {
@@ -136,10 +142,9 @@ public class DeviceControlActivity extends Activity {
                 clearUI();
             } else if (BluetoothLeService.ACTION_GATT_SERVICES_DISCOVERED.equals(action)) {
                 // Show all the supported services and characteristics on the user interface.
-                mSendLabelBtn.setVisibility(View.VISIBLE);
-                mSendLogoBtn.setVisibility(View.VISIBLE);
                 mStreamingBtn.setVisibility(View.VISIBLE);
                 mReadSingleBtn.setVisibility(View.VISIBLE);
+                mRegBtn.setVisibility(View.VISIBLE);
                 displayGattServices(mBluetoothLeService.getSupportedGattServices());
             } else if (BluetoothLeService.ACTION_DATA_AVAILABLE.equals(action)) {
                 displayData(intent.getStringExtra(BluetoothLeService.EXTRA_DATA));
@@ -182,6 +187,67 @@ public class DeviceControlActivity extends Activity {
             }
         }.start();
     }
+    private int channelReconstruct(byte byte2, byte byte1, byte byte0){
+        int channel = 0;
+
+        if (byte2 <0 ){
+            channel = (0xff<<24) + ((byte2&0xff)<<16) + ((byte1&0xff)<<8) + ((byte0&0xff));
+        } else {
+            channel = ((byte2&0xff)<<16) + ((byte1&0xff)<<8) + ((byte0&0xff));
+        }
+        return channel;
+    }
+    private void dataHandlerThread() {
+        new Thread() {
+            public void run() {
+
+                do {
+                    try {
+                        byte[] data = dataQueue.take();
+                        // read first byte to determine sample size
+                        int mask = data[0];
+                        int numberChan = Integer.bitCount(mask);
+                        Log.i(TAG, "Number of channels:" + Long.toString(numberChan));
+                        // correct for loop to max number of packets
+                        int offset = 1;
+                        // get each sample
+                        int samplePerPacket = data.length/(3*numberChan + 8);
+                        Log.i(TAG, "Number of Samples:" + Long.toString(samplePerPacket));
+                        Log.i(TAG, "packet size:" + Long.toString(data.length));
+                        for (int i = 0; i < samplePerPacket; i++){
+                            ByteBuffer bufferTimestAmp = ByteBuffer.wrap(data, offset, 4).order(ByteOrder.LITTLE_ENDIAN);
+                            int timestamp = bufferTimestAmp.getInt();
+                            offset += 4;
+                            ByteBuffer bufferSample = ByteBuffer.wrap(data, offset, 4).order(ByteOrder.LITTLE_ENDIAN);
+                            int sampleNum = bufferSample.getInt();
+                            offset += 4;
+                            List<Integer> channels = new ArrayList<>();
+                            for (int j = 0; j < numberChan; j++) {
+                                // TODO: verify channel reconstruction...
+                                Log.i(TAG, "Byte2:" + Byte.toString(data[offset]));
+                                int channel = channelReconstruct(data[offset], data[offset +1], data[offset +2]);
+                                Log.i(TAG, "Channel:" + Integer.toString(channel));
+                                channels.add(channel);
+                                offset += 3;
+                            }
+                            eegSample sample = new eegSample(timestamp, sampleNum, mask, channels);
+                            if (mIsImpedance == true) {
+                                // process Impedance
+                                addImpedanceChannel(channels.get(0));
+                            }
+                        }
+                    } catch (InterruptedException e) {
+                        //Do nothing for now
+                    }
+
+                }while(mReadStreamRunnable !=null);
+            }
+        }.start();
+    }
+
+    private void addImpedanceChannel(int channel) {
+        Log.i(TAG, "Channel Added: " + Long.toString(channel));
+    }
     private void readPacket() {
         if (mBluetoothLeService != null) {
             BluetoothGattCharacteristic readChar =
@@ -189,23 +255,30 @@ public class DeviceControlActivity extends Activity {
             if (readChar != null) {
                 if (mBluetoothLeService.readBytes(readChar)) {
                     byte[] responseByteArr = readChar.getValue();
-                    if (responseByteArr.length > 6) {
+                    if (responseByteArr.length > 1) {
+                        // Add data to circular buffer and do no more processing...
+                        dataQueue.add(responseByteArr);
                         ByteBuffer buffer = ByteBuffer.wrap(responseByteArr, 5, 4).order(ByteOrder.LITTLE_ENDIAN);
                         sample_number_Int = buffer.getInt();
-                        Log.i(TAG, "sample number= " + Long.toString(sample_number_Int));
-                        ts_curr_Long = System.currentTimeMillis();
-                        Long samp_per_sec = (sample_number_Int - sample_number_prev)*1000/(ts_curr_Long-ts_prev_Long);
-                        samp_per_sec_av = samp_per_sec_av + samp_per_sec;
-                        reads = reads + 1;
-                        Log.i(TAG + " > " ,Integer.toString(sample_number_Int));
-                        Log.i(TAG + " --------> " ,Long.toString(ts_curr_Long));
-                        if (reads >= 10) {
-                            mSampleField.setText("rate: " + Long.toString(samp_per_sec_av/reads));
-                            samp_per_sec_av = 0L;
-                            reads = 0;
-                        }
-                        sample_number_prev = sample_number_Int;
-                        ts_prev_Long = ts_curr_Long;
+                        // dataBuff.add(responseByteArr);
+                        
+                        // buffer = ByteBuffer.wrap(responseByteArr, 0, 1);
+                        // int mask = buffer.getInt();
+                        // Log.i(TAG, "Mask = " + Long.toString(mask));
+
+
+                        // ts_curr_Long = System.currentTimeMillis();
+                        // Long samp_per_sec = (sample_number_Int - sample_number_prev)*1000/(ts_curr_Long-ts_prev_Long);
+                        // samp_per_sec_av = samp_per_sec_av + samp_per_sec;
+                        // reads = reads + 1;
+
+                        // if (reads >= 10) {
+                        //     mSampleField.setText("rate: " + Long.toString(samp_per_sec_av/reads));
+                        //     samp_per_sec_av = 0L;
+                        //     reads = 0;
+                        // }
+                        // sample_number_prev = sample_number_Int;
+                        // ts_prev_Long = ts_curr_Long;
                     }
                 } else {
                     Log.e(TAG, "Failed to read bytes");
@@ -234,11 +307,14 @@ public class DeviceControlActivity extends Activity {
             mStreamingBtn.setText(R.string.menu_stop);
             mReadStreamRunnable = new StreamReadRunnable(UUID.fromString(STREAMING_READ_UUID));
             mReadStreamRunnable.run();
+            dataHandlerThread();
         } else {
             Log.d(TAG, "Stream stop");
             mReadStreamRunnable.cancelStream();
             mReadStreamRunnable = null;
             mStreamingBtn.setText(R.string.stream_read_start);
+            samp_per_sec_av = 0L;
+            sample_number_prev = 0;
             sendstop();
         }
     }
@@ -267,59 +343,6 @@ public class DeviceControlActivity extends Activity {
         }
     }
 
-    private void sendToEpaper(final int resourceID){
-        Thread sendImageThread = new Thread(new Runnable() {
-                @Override
-            public void run() {
-
-                // this dynamically extends to take the bytes you read'
-                try {
-
-                    BluetoothGattCharacteristic characteristic =
-                            mBluetoothLeService.getCharacteristic(UUID.fromString(WRITE_UUID));
-                    if (characteristic != null) {
-
-                        String text_data = "";
-                        InputStream inputStream = getApplicationContext().getResources().openRawResource(resourceID);
-                        InputStreamReader inputreader = new InputStreamReader(inputStream);
-                        BufferedReader buffreader = new BufferedReader(inputreader);
-                        String line;
-                        StringBuilder text = new StringBuilder();
-                        String finalString;
-
-                        try {
-                            while ((line = buffreader.readLine()) != null) {
-                                text.append(line);
-                                text.append('\n');
-                            }
-                        } catch (IOException e) {
-                            Log.e(TAG, e.getMessage());
-                        }
-
-                        finalString = text.toString().replaceAll(" ", "");
-                        finalString = finalString.replaceAll(",", "");
-                        finalString = finalString.replaceAll("0x", "");
-                        finalString = finalString.replace("\n", "").replace("\r", "");
-                        byte[] array = hexStringToByteArray(finalString);
-                        int length = array.length;
-
-                                        /*
-                                        String[] data = finalString.toString().split(",");
-                                        for (int i = 0; i < data.length; i++) {
-                                            byte[] decoded = Hex.decodeHex(data[0]);
-                                            Log.i(TAG, Byte.toString(decoded[0]));
-                                        }*/
-
-                        //byte[] stuffw = buffer.toByteArray();
-                        mBluetoothLeService.sendImage(characteristic, array);
-                    }
-                } catch (Exception ex) {
-                    Log.e(TAG, ex.getMessage());
-                }
-            }
-        });
-        sendImageThread.start();
-    }
 
     // If a given GATT characteristic is selected, check for supported features.  This sample
     // demonstrates 'Read' and 'Notify' features.  See
@@ -360,12 +383,10 @@ public class DeviceControlActivity extends Activity {
             };
 
     private void clearUI() {
-        mGattServicesList.setAdapter((SimpleExpandableListAdapter) null);
         mDataField.setText(R.string.no_data);
-        mSendLabelBtn.setVisibility(View.GONE);
-        mSendLogoBtn.setVisibility(View.GONE);
         mStreamingBtn.setVisibility(View.GONE);
         mReadSingleBtn.setVisibility(View.GONE);
+        mRegBtn.setVisibility(View.GONE);
         mSampleField.setText("-");
     }
 
@@ -380,15 +401,12 @@ public class DeviceControlActivity extends Activity {
 
         // Sets up UI references.
         ((TextView) findViewById(R.id.device_address)).setText(mDeviceAddress);
-        mGattServicesList = (ExpandableListView) findViewById(R.id.gatt_services_list);
-        mGattServicesList.setOnChildClickListener(servicesListClickListner);
         mConnectionState = (TextView) findViewById(R.id.connection_state);
         mDataField = (TextView) findViewById(R.id.data_value);
         mSampleField = (TextView) findViewById(R.id.sampleNumTxt);
-        mSendLabelBtn = (Button) findViewById(R.id.sendLabelBtn);
-        mSendLogoBtn = (Button) findViewById(R.id.sendLogoBtn);
         mStreamingBtn = (Button) findViewById(R.id.startStrmBtn);
         mReadSingleBtn = (Button) findViewById(R.id.singleReadBtn);
+        mRegBtn = (Button) findViewById(R.id.registerBtn);
         setupUICallbacks();
         setupListeners();
 
@@ -471,18 +489,6 @@ public class DeviceControlActivity extends Activity {
     }
 
     private void setupListeners(){
-        mSendLogoBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                    sendToEpaper(R.raw.logo);
-            }
-        });
-        mSendLabelBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                sendToEpaper(R.raw.label);
-            }
-        });
         mStreamingBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -495,8 +501,19 @@ public class DeviceControlActivity extends Activity {
                 readBLESingle();
             }
         });
+        mRegBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                openRegActivity();
+            }
+        });
     }
 
+    public void openRegActivity(){
+        Intent intent = new Intent(this, RegActivity.class);
+        startActivity(intent);
+        // readRegisters();
+    }
     // Demonstrates how to iterate through the supported GATT Services/Characteristics.
     // In this sample, we populate the data structure that is bound to the ExpandableListView
     // on the UI.
@@ -551,7 +568,6 @@ public class DeviceControlActivity extends Activity {
                 new String[]{LIST_NAME, LIST_UUID},
                 new int[]{android.R.id.text1, android.R.id.text2}
         );
-        mGattServicesList.setAdapter(gattServiceAdapter);
     }
 
 

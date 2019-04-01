@@ -17,7 +17,9 @@
         android:orientation="vertical"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_margin="10dp">
+        android:layout_margin="10dp"
+    android:scaleType="fitCenter"
+    android:background="@drawable/heimdallr_background">
     <LinearLayout android:orientation="horizontal"
                   android:layout_width="match_parent"
                   android:layout_height="wrap_content"
@@ -67,20 +69,6 @@
     </LinearLayout>
 
     <Button
-        android:id="@+id/sendLabelBtn"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Send Label"
-        android:visibility="invisible" />
-
-    <Button
-        android:id="@+id/sendLogoBtn"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Send Logo"
-        android:visibility="invisible" />
-
-    <Button
         android:id="@+id/singleReadBtn"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -100,8 +88,17 @@
         android:layout_height="wrap_content"
         android:text="Sample: 0" />
 
-    <ExpandableListView
-        android:id="@+id/gatt_services_list"
+    <View
+        android:id="@+id/divider"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
+        android:layout_height="1dp"
+        android:background="?android:attr/listDivider" />
+
+    <Button
+        android:id="@+id/registerBtn"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="ADS1299 Registers"
+        android:visibility="invisible" />
+
 </LinearLayout>

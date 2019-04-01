@@ -8,16 +8,16 @@
         "source": "/Users/fabien/.gradle/caches/transforms-1/files-1.1/appcompat-v7-27.0.2.aar/b769626ea7799d3d8d098271c55739d6/res/anim/abc_fade_in.xml"
     },
     {
+        "merged": "/Users/fabien/work/heimdallr/android-BluetoothLeGatt/Application/build/intermediates/res/merged/debug/drawable-hdpi_ic_launcher.png.flat",
+        "source": "/Users/fabien/work/heimdallr/android-BluetoothLeGatt/Application/src/main/res/drawable-hdpi/ic_launcher.png"
+    },
+    {
         "merged": "/Users/fabien/work/heimdallr/android-BluetoothLeGatt/Application/build/intermediates/res/merged/debug/drawable-xxhdpi-v4_abc_list_longpressed_holo.9.png.flat",
         "source": "/Users/fabien/.gradle/caches/transforms-1/files-1.1/appcompat-v7-27.0.2.aar/b769626ea7799d3d8d098271c55739d6/res/drawable-xxhdpi-v4/abc_list_longpressed_holo.9.png"
     },
     {
         "merged": "/Users/fabien/work/heimdallr/android-BluetoothLeGatt/Application/build/intermediates/res/merged/debug/layout_abc_search_view.xml.flat",
         "source": "/Users/fabien/.gradle/caches/transforms-1/files-1.1/appcompat-v7-27.0.2.aar/b769626ea7799d3d8d098271c55739d6/res/layout/abc_search_view.xml"
-    },
-    {
-        "merged": "/Users/fabien/work/heimdallr/android-BluetoothLeGatt/Application/build/intermediates/res/merged/debug/drawable-hdpi_ic_launcher.png.flat",
-        "source": "/Users/fabien/work/heimdallr/android-BluetoothLeGatt/Application/src/main/res/drawable-hdpi/ic_launcher.png"
     },
     {
         "merged": "/Users/fabien/work/heimdallr/android-BluetoothLeGatt/Application/build/intermediates/res/merged/debug/color-v23_abc_tint_seek_thumb.xml.flat",
@@ -218,6 +218,10 @@
     {
         "merged": "/Users/fabien/work/heimdallr/android-BluetoothLeGatt/Application/build/intermediates/res/merged/debug/drawable-xhdpi-v4_abc_scrubber_control_to_pressed_mtrl_000.png.flat",
         "source": "/Users/fabien/.gradle/caches/transforms-1/files-1.1/appcompat-v7-27.0.2.aar/b769626ea7799d3d8d098271c55739d6/res/drawable-xhdpi-v4/abc_scrubber_control_to_pressed_mtrl_000.png"
+    },
+    {
+        "merged": "/Users/fabien/work/heimdallr/android-BluetoothLeGatt/Application/build/intermediates/res/merged/debug/layout_activity_reg.xml.flat",
+        "source": "/Users/fabien/work/heimdallr/android-BluetoothLeGatt/Application/src/main/res/layout/activity_reg.xml"
     },
     {
         "merged": "/Users/fabien/work/heimdallr/android-BluetoothLeGatt/Application/build/intermediates/res/merged/debug/raw_label.txt.flat",
@@ -588,16 +592,16 @@
         "source": "/Users/fabien/.gradle/caches/transforms-1/files-1.1/support-media-compat-27.0.2.aar/5769cd61f8f1c063976ec6c93939e7c1/res/layout/notification_media_cancel_action.xml"
     },
     {
-        "merged": "/Users/fabien/work/heimdallr/android-BluetoothLeGatt/Application/build/intermediates/res/merged/debug/drawable_abc_seekbar_tick_mark_material.xml.flat",
-        "source": "/Users/fabien/.gradle/caches/transforms-1/files-1.1/appcompat-v7-27.0.2.aar/b769626ea7799d3d8d098271c55739d6/res/drawable/abc_seekbar_tick_mark_material.xml"
-    },
-    {
         "merged": "/Users/fabien/work/heimdallr/android-BluetoothLeGatt/Application/build/intermediates/res/merged/debug/drawable-xxhdpi-v4_abc_ic_menu_selectall_mtrl_alpha.png.flat",
         "source": "/Users/fabien/.gradle/caches/transforms-1/files-1.1/appcompat-v7-27.0.2.aar/b769626ea7799d3d8d098271c55739d6/res/drawable-xxhdpi-v4/abc_ic_menu_selectall_mtrl_alpha.png"
     },
     {
         "merged": "/Users/fabien/work/heimdallr/android-BluetoothLeGatt/Application/build/intermediates/res/merged/debug/drawable-xxhdpi_ic_launcher.png.flat",
         "source": "/Users/fabien/work/heimdallr/android-BluetoothLeGatt/Application/src/main/res/drawable-xxhdpi/ic_launcher.png"
+    },
+    {
+        "merged": "/Users/fabien/work/heimdallr/android-BluetoothLeGatt/Application/build/intermediates/res/merged/debug/drawable_abc_seekbar_tick_mark_material.xml.flat",
+        "source": "/Users/fabien/.gradle/caches/transforms-1/files-1.1/appcompat-v7-27.0.2.aar/b769626ea7799d3d8d098271c55739d6/res/drawable/abc_seekbar_tick_mark_material.xml"
     },
     {
         "merged": "/Users/fabien/work/heimdallr/android-BluetoothLeGatt/Application/build/intermediates/res/merged/debug/drawable-hdpi-v4_notification_bg_normal_pressed.9.png.flat",
@@ -644,12 +648,12 @@
         "source": "/Users/fabien/.gradle/caches/transforms-1/files-1.1/appcompat-v7-27.0.2.aar/b769626ea7799d3d8d098271c55739d6/res/drawable-hdpi-v4/abc_ic_star_black_36dp.png"
     },
     {
-        "merged": "/Users/fabien/work/heimdallr/android-BluetoothLeGatt/Application/build/intermediates/res/merged/debug/drawable-hdpi-v4_abc_ic_star_half_black_16dp.png.flat",
-        "source": "/Users/fabien/.gradle/caches/transforms-1/files-1.1/appcompat-v7-27.0.2.aar/b769626ea7799d3d8d098271c55739d6/res/drawable-hdpi-v4/abc_ic_star_half_black_16dp.png"
-    },
-    {
         "merged": "/Users/fabien/work/heimdallr/android-BluetoothLeGatt/Application/build/intermediates/res/merged/debug/drawable-hdpi-v4_abc_ic_menu_share_mtrl_alpha.png.flat",
         "source": "/Users/fabien/.gradle/caches/transforms-1/files-1.1/appcompat-v7-27.0.2.aar/b769626ea7799d3d8d098271c55739d6/res/drawable-hdpi-v4/abc_ic_menu_share_mtrl_alpha.png"
+    },
+    {
+        "merged": "/Users/fabien/work/heimdallr/android-BluetoothLeGatt/Application/build/intermediates/res/merged/debug/drawable-hdpi-v4_abc_ic_star_half_black_16dp.png.flat",
+        "source": "/Users/fabien/.gradle/caches/transforms-1/files-1.1/appcompat-v7-27.0.2.aar/b769626ea7799d3d8d098271c55739d6/res/drawable-hdpi-v4/abc_ic_star_half_black_16dp.png"
     },
     {
         "merged": "/Users/fabien/work/heimdallr/android-BluetoothLeGatt/Application/build/intermediates/res/merged/debug/drawable-mdpi-v4_abc_btn_switch_to_on_mtrl_00001.9.png.flat",
@@ -1080,12 +1084,12 @@
         "source": "/Users/fabien/.gradle/caches/transforms-1/files-1.1/appcompat-v7-27.0.2.aar/b769626ea7799d3d8d098271c55739d6/res/drawable-xhdpi-v4/abc_list_pressed_holo_dark.9.png"
     },
     {
-        "merged": "/Users/fabien/work/heimdallr/android-BluetoothLeGatt/Application/build/intermediates/res/merged/debug/color_abc_search_url_text.xml.flat",
-        "source": "/Users/fabien/.gradle/caches/transforms-1/files-1.1/appcompat-v7-27.0.2.aar/b769626ea7799d3d8d098271c55739d6/res/color/abc_search_url_text.xml"
-    },
-    {
         "merged": "/Users/fabien/work/heimdallr/android-BluetoothLeGatt/Application/build/intermediates/res/merged/debug/menu_gatt_services.xml.flat",
         "source": "/Users/fabien/work/heimdallr/android-BluetoothLeGatt/Application/src/main/res/menu/gatt_services.xml"
+    },
+    {
+        "merged": "/Users/fabien/work/heimdallr/android-BluetoothLeGatt/Application/build/intermediates/res/merged/debug/color_abc_search_url_text.xml.flat",
+        "source": "/Users/fabien/.gradle/caches/transforms-1/files-1.1/appcompat-v7-27.0.2.aar/b769626ea7799d3d8d098271c55739d6/res/color/abc_search_url_text.xml"
     },
     {
         "merged": "/Users/fabien/work/heimdallr/android-BluetoothLeGatt/Application/build/intermediates/res/merged/debug/drawable-hdpi-v4_abc_ic_menu_copy_mtrl_am_alpha.png.flat",
@@ -1364,6 +1368,10 @@
         "source": "/Users/fabien/.gradle/caches/transforms-1/files-1.1/appcompat-v7-27.0.2.aar/b769626ea7799d3d8d098271c55739d6/res/drawable-mdpi-v4/abc_textfield_search_activated_mtrl_alpha.9.png"
     },
     {
+        "merged": "/Users/fabien/work/heimdallr/android-BluetoothLeGatt/Application/build/intermediates/res/merged/debug/drawable_heimdallr_background.png.flat",
+        "source": "/Users/fabien/work/heimdallr/android-BluetoothLeGatt/Application/src/main/res/drawable/heimdallr_background.png"
+    },
+    {
         "merged": "/Users/fabien/work/heimdallr/android-BluetoothLeGatt/Application/build/intermediates/res/merged/debug/drawable-xxhdpi-v4_abc_textfield_default_mtrl_alpha.9.png.flat",
         "source": "/Users/fabien/.gradle/caches/transforms-1/files-1.1/appcompat-v7-27.0.2.aar/b769626ea7799d3d8d098271c55739d6/res/drawable-xxhdpi-v4/abc_textfield_default_mtrl_alpha.9.png"
     },
@@ -1548,12 +1556,12 @@
         "source": "/Users/fabien/.gradle/caches/transforms-1/files-1.1/appcompat-v7-27.0.2.aar/b769626ea7799d3d8d098271c55739d6/res/color-v23/abc_tint_edittext.xml"
     },
     {
-        "merged": "/Users/fabien/work/heimdallr/android-BluetoothLeGatt/Application/build/intermediates/res/merged/debug/layout-v21_notification_template_icon_group.xml.flat",
-        "source": "/Users/fabien/.gradle/caches/transforms-1/files-1.1/support-compat-27.0.2.aar/3320a83133f34a63e1b6ea1af8055d2f/res/layout-v21/notification_template_icon_group.xml"
-    },
-    {
         "merged": "/Users/fabien/work/heimdallr/android-BluetoothLeGatt/Application/build/intermediates/res/merged/debug/layout_gatt_services_characteristics.xml.flat",
         "source": "/Users/fabien/work/heimdallr/android-BluetoothLeGatt/Application/src/main/res/layout/gatt_services_characteristics.xml"
+    },
+    {
+        "merged": "/Users/fabien/work/heimdallr/android-BluetoothLeGatt/Application/build/intermediates/res/merged/debug/layout-v21_notification_template_icon_group.xml.flat",
+        "source": "/Users/fabien/.gradle/caches/transforms-1/files-1.1/support-compat-27.0.2.aar/3320a83133f34a63e1b6ea1af8055d2f/res/layout-v21/notification_template_icon_group.xml"
     },
     {
         "merged": "/Users/fabien/work/heimdallr/android-BluetoothLeGatt/Application/build/intermediates/res/merged/debug/drawable-xhdpi-v4_abc_ic_star_black_16dp.png.flat",
