@@ -6,6 +6,7 @@ public class eegSample {
     private int timestamp;
     private int sampleNum;
     private int chanMask;
+    private int odr;
     private List<Integer> channels = new ArrayList<>();
 
     public eegSample(int sampleTimestamp, int sampleNumber, int channelMask, final List<Integer> channelVals) {

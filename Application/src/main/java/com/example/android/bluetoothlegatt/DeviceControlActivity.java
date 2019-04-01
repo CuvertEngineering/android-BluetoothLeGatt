@@ -161,7 +161,7 @@ public class DeviceControlActivity extends Activity {
                     characteristic = mBluetoothLeService.getCharacteristic(UUID.fromString(STREAMING_START_UUID));
                     if (characteristic != null) {
                         byte[] cmd = new byte[1];
-                        cmd[0] = 1;
+                        cmd[0] = (byte)0x81;
                         mBluetoothLeService.writeBytes(characteristic, cmd);
                     }
                 }while(characteristic == null);
@@ -178,7 +178,7 @@ public class DeviceControlActivity extends Activity {
                     characteristic = mBluetoothLeService.getCharacteristic(UUID.fromString(STREAMING_START_UUID));
                     if (characteristic != null) {
                         byte[] cmd = new byte[1];
-                        cmd[0] = 1;
+                        cmd[0] = (byte)0x80;
                         mBluetoothLeService.writeBytes(characteristic, cmd);
                         // Don't know why the first one isn't seen...
                         mBluetoothLeService.writeBytes(characteristic, cmd);
