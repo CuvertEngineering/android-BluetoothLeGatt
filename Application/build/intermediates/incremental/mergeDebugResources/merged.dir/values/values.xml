@@ -410,7 +410,7 @@
         
         ]]>
     </string>
-    <string name="label_data">Data:</string>
+    <string name="label_data">FW:</string>
     <string name="label_device_address">Device address:</string>
     <string name="label_state">State:</string>
     <string name="menu_connect">Connect</string>

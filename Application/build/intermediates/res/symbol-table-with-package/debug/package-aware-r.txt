@@ -721,7 +721,6 @@ id connection_state
 id contentPanel
 id custom
 id customPanel
-id data_value
 id decor_content_parent
 id default_activity_button
 id device_address
@@ -805,7 +804,6 @@ id shortcut
 id showCustom
 id showHome
 id showTitle
-id singleReadBtn
 id spacer
 id spinnerGain1
 id spinnerRate

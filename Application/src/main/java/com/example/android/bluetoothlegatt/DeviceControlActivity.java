@@ -72,9 +72,7 @@ public class DeviceControlActivity extends Activity {
     int sample_number_Int = 0;
     int sample_number_prev = 0;
     private TextView mConnectionState;
-    private TextView mDataField;
     private Button mStreamingBtn;
-    private Button mReadSingleBtn;
     private Button mConfigBtn;
     private Button mRegBtn;
     private String mDeviceName;
@@ -143,12 +141,9 @@ public class DeviceControlActivity extends Activity {
             } else if (BluetoothLeService.ACTION_GATT_SERVICES_DISCOVERED.equals(action)) {
                 // Show all the supported services and characteristics on the user interface.
                 mStreamingBtn.setVisibility(View.VISIBLE);
-                mReadSingleBtn.setVisibility(View.VISIBLE);
                 mConfigBtn.setVisibility(View.VISIBLE);
                 mRegBtn.setVisibility(View.VISIBLE);
                 displayGattServices(mBluetoothLeService.getSupportedGattServices());
-            } else if (BluetoothLeService.ACTION_DATA_AVAILABLE.equals(action)) {
-                displayData(intent.getStringExtra(BluetoothLeService.EXTRA_DATA));
             }
         }
     };
@@ -212,16 +207,17 @@ public class DeviceControlActivity extends Activity {
                         // correct for loop to max number of packets
                         int offset = 1;
                         // get each sample
-                        int samplePerPacket = data.length/(3*numberChan + 8);
+                        int samplePerPacket = data.length/(3*numberChan + 4); // 4 is timestamp
                         Log.i(TAG, "Number of Samples:" + Long.toString(samplePerPacket));
                         Log.i(TAG, "packet size:" + Long.toString(data.length));
                         for (int i = 0; i < samplePerPacket; i++){
                             ByteBuffer bufferTimestAmp = ByteBuffer.wrap(data, offset, 4).order(ByteOrder.LITTLE_ENDIAN);
                             int timestamp = bufferTimestAmp.getInt();
                             offset += 4;
-                            ByteBuffer bufferSample = ByteBuffer.wrap(data, offset, 4).order(ByteOrder.LITTLE_ENDIAN);
-                            int sampleNum = bufferSample.getInt();
-                            offset += 4;
+                            // For now we don't use Sample number as not useful and takes bandwidth for nothing...
+//                            ByteBuffer bufferSample = ByteBuffer.wrap(data, offset, 4).order(ByteOrder.LITTLE_ENDIAN);
+//                            int sampleNum = bufferSample.getInt();
+//                            offset += 4;
                             List<Integer> channels = new ArrayList<>();
                             for (int j = 0; j < numberChan; j++) {
                                 // TODO: verify channel reconstruction...
@@ -231,7 +227,7 @@ public class DeviceControlActivity extends Activity {
                                 channels.add(channel);
                                 offset += 3;
                             }
-                            eegSample sample = new eegSample(timestamp, sampleNum, mask, channels);
+                            eegSample sample = new eegSample(timestamp, 0, mask, channels);
                             if (mIsImpedance == true) {
                                 // process Impedance
                                 addImpedanceChannel(channels.get(0));
@@ -384,9 +380,7 @@ public class DeviceControlActivity extends Activity {
             };
 
     private void clearUI() {
-        mDataField.setText(R.string.no_data);
         mStreamingBtn.setVisibility(View.GONE);
-        mReadSingleBtn.setVisibility(View.GONE);
         mConfigBtn.setVisibility(View.GONE);
         mRegBtn.setVisibility(View.GONE);
     }
@@ -403,9 +397,7 @@ public class DeviceControlActivity extends Activity {
         // Sets up UI references.
         ((TextView) findViewById(R.id.device_address)).setText(mDeviceAddress);
         mConnectionState = (TextView) findViewById(R.id.connection_state);
-        mDataField = (TextView) findViewById(R.id.data_value);
         mStreamingBtn = (Button) findViewById(R.id.startStrmBtn);
-        mReadSingleBtn = (Button) findViewById(R.id.singleReadBtn);
         mConfigBtn = (Button) findViewById(R.id.ConfigBtn);
         mRegBtn = (Button) findViewById(R.id.registerBtn);
         setupUICallbacks();
@@ -483,23 +475,12 @@ public class DeviceControlActivity extends Activity {
         });
     }
 
-    private void displayData(String data) {
-        if (data != null) {
-            mDataField.setText(data);
-        }
-    }
 
     private void setupListeners(){
         mStreamingBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 readBLEStream();
-            }
-        });
-        mReadSingleBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                readBLESingle();
             }
         });
         mRegBtn.setOnClickListener(new View.OnClickListener() {
