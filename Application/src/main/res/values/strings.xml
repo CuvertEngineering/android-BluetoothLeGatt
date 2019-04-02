@@ -34,4 +34,23 @@
     <string name="menu_stop">Stop</string>
     <string name="stream_read_start">Start Streaming</string>
     <string name="stream_read_stop">Stop Streaming</string>
+
+    <!-- Rate array items -->
+    <string name="SpinnerRatePrompt">Choose a rate (Hz)</string>
+    <string-array name="SpinnerRateItems">
+        <item>250</item>
+        <item>500</item>
+        <item>1000</item>
+    </string-array>
+
+    <string name="SpinnerGainPrompt">Choose a gain </string>
+    <string-array name="SpinnerGainItems">
+        <item>1</item>
+        <item>2</item>
+        <item>4</item>
+        <item>6</item>
+        <item>8</item>
+        <item>12</item>
+        <item>24</item>
+    </string-array>
 </resources>

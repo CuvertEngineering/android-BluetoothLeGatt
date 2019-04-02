@@ -1,0 +1,220 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:scaleType="fitCenter"
+    android:background="@drawable/heimdallr_background">
+
+
+    <CheckBox
+        android:id="@+id/checkBoxChan1"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentTop="true"
+        android:layout_marginStart="13dp"
+        android:layout_marginTop="108dp"
+        android:text="1"
+        tools:layout_editor_absoluteX="102dp"
+        tools:layout_editor_absoluteY="101dp" />
+
+    <CheckBox
+        android:id="@+id/checkBoxChan2"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentTop="true"
+        android:layout_marginStart="63dp"
+        android:layout_marginTop="108dp"
+        android:text="2"
+        tools:layout_editor_absoluteX="102dp"
+        tools:layout_editor_absoluteY="101dp" />
+    <CheckBox
+        android:id="@+id/checkBoxChan3"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentTop="true"
+        android:layout_marginStart="113dp"
+        android:layout_marginTop="108dp"
+        android:text="3"
+        tools:layout_editor_absoluteX="102dp"
+        tools:layout_editor_absoluteY="101dp" />
+
+    <CheckBox
+        android:id="@+id/checkBoxChan4"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentTop="true"
+        android:layout_marginStart="163dp"
+        android:layout_marginTop="108dp"
+        android:text="4"
+        tools:layout_editor_absoluteX="102dp"
+        tools:layout_editor_absoluteY="101dp" />
+
+    <CheckBox
+        android:id="@+id/checkBoxChan5"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentTop="true"
+        android:layout_marginStart="12dp"
+        android:layout_marginTop="140dp"
+        android:text="5"
+        tools:layout_editor_absoluteX="102dp"
+        tools:layout_editor_absoluteY="101dp" />
+
+    <CheckBox
+        android:id="@+id/checkBoxChan6"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentTop="true"
+        android:layout_marginStart="63dp"
+        android:layout_marginTop="140dp"
+        android:text="6"
+        tools:layout_editor_absoluteX="102dp"
+        tools:layout_editor_absoluteY="101dp" />
+
+    <CheckBox
+        android:id="@+id/checkBoxChan7"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentTop="true"
+        android:layout_marginStart="113dp"
+        android:layout_marginTop="140dp"
+        android:text="7"
+        tools:layout_editor_absoluteX="102dp"
+        tools:layout_editor_absoluteY="101dp" />
+
+    <CheckBox
+        android:id="@+id/checkBoxChan8"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentTop="true"
+        android:layout_marginStart="163dp"
+        android:layout_marginTop="139dp"
+        android:text="8"
+        tools:layout_editor_absoluteX="102dp"
+        tools:layout_editor_absoluteY="101dp" />
+
+    <Button
+        android:id="@+id/buttonGetConfig"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentEnd="true"
+        android:layout_marginTop="13dp"
+        android:layout_marginEnd="79dp"
+        android:text="Get" />
+
+    <Button
+        android:id="@+id/buttonSetConfig"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentEnd="true"
+        android:layout_marginTop="13dp"
+        android:layout_marginEnd="11dp"
+        android:text="Set" />
+
+    <TextView
+        android:id="@+id/editTextChannel"
+        android:layout_width="94dp"
+        android:layout_height="wrap_content"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentTop="true"
+        android:layout_marginStart="12dp"
+        android:layout_marginTop="68dp"
+        android:ems="10"
+        android:inputType="textPersonName"
+        android:text="Channel" />
+
+    <TextView
+        android:id="@+id/editTextGain"
+        android:layout_width="57dp"
+        android:layout_height="wrap_content"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentTop="true"
+        android:layout_marginStart="14dp"
+        android:layout_marginTop="215dp"
+        android:ems="10"
+        android:inputType="textPersonName"
+        android:text="Gain:" />
+
+    <TextView
+        android:id="@+id/textViewImpedance"
+        android:layout_width="157dp"
+        android:layout_height="32dp"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentTop="true"
+        android:layout_marginStart="4dp"
+        android:layout_marginTop="425dp"
+        android:ems="10"
+        android:inputType="textPersonName"
+        android:text="Impedance interval:"
+        android:visibility="invisible" />
+
+    <TextView
+        android:id="@+id/editTextRate"
+        android:layout_width="62dp"
+        android:layout_height="wrap_content"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentTop="true"
+        android:layout_marginStart="14dp"
+        android:layout_marginTop="266dp"
+        android:ems="10"
+        android:inputType="textPersonName"
+        android:text="Rate:" />
+
+    <Switch
+        android:id="@+id/switchImpedance"
+        android:layout_width="310dp"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentEnd="true"
+        android:layout_marginTop="341dp"
+        android:layout_marginEnd="101dp"
+        android:text="Impedance:" />
+
+    <Spinner
+        android:id="@+id/spinnerRate"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentEnd="true"
+        android:layout_marginTop="257dp"
+        android:layout_marginEnd="246dp"
+        android:entries="@array/SpinnerRateItems"
+        android:prompt="@string/SpinnerRatePrompt" />
+
+    <Spinner
+        android:id="@+id/spinnerGain1"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentEnd="true"
+        android:layout_marginTop="205dp"
+        android:layout_marginEnd="246dp"
+        android:entries="@array/SpinnerGainItems"
+        android:prompt="@string/SpinnerGainPrompt" />
+
+    <EditText
+        android:id="@+id/impedanceIntervalText"
+        android:layout_width="111dp"
+        android:layout_height="56dp"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentEnd="true"
+        android:layout_marginTop="401dp"
+        android:layout_marginEnd="129dp"
+        android:layout_marginBottom="331dp"
+        android:ems="10"
+        android:inputType="number"
+        android:visibility="invisible" />
+
+</RelativeLayout>

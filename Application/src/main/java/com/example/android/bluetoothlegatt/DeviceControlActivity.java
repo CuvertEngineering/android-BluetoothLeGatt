@@ -73,9 +73,9 @@ public class DeviceControlActivity extends Activity {
     int sample_number_prev = 0;
     private TextView mConnectionState;
     private TextView mDataField;
-    private TextView mSampleField;
     private Button mStreamingBtn;
     private Button mReadSingleBtn;
+    private Button mConfigBtn;
     private Button mRegBtn;
     private String mDeviceName;
     private String mDeviceAddress;
@@ -144,6 +144,7 @@ public class DeviceControlActivity extends Activity {
                 // Show all the supported services and characteristics on the user interface.
                 mStreamingBtn.setVisibility(View.VISIBLE);
                 mReadSingleBtn.setVisibility(View.VISIBLE);
+                mConfigBtn.setVisibility(View.VISIBLE);
                 mRegBtn.setVisibility(View.VISIBLE);
                 displayGattServices(mBluetoothLeService.getSupportedGattServices());
             } else if (BluetoothLeService.ACTION_DATA_AVAILABLE.equals(action)) {
@@ -386,8 +387,8 @@ public class DeviceControlActivity extends Activity {
         mDataField.setText(R.string.no_data);
         mStreamingBtn.setVisibility(View.GONE);
         mReadSingleBtn.setVisibility(View.GONE);
+        mConfigBtn.setVisibility(View.GONE);
         mRegBtn.setVisibility(View.GONE);
-        mSampleField.setText("-");
     }
 
     @Override
@@ -403,9 +404,9 @@ public class DeviceControlActivity extends Activity {
         ((TextView) findViewById(R.id.device_address)).setText(mDeviceAddress);
         mConnectionState = (TextView) findViewById(R.id.connection_state);
         mDataField = (TextView) findViewById(R.id.data_value);
-        mSampleField = (TextView) findViewById(R.id.sampleNumTxt);
         mStreamingBtn = (Button) findViewById(R.id.startStrmBtn);
         mReadSingleBtn = (Button) findViewById(R.id.singleReadBtn);
+        mConfigBtn = (Button) findViewById(R.id.ConfigBtn);
         mRegBtn = (Button) findViewById(R.id.registerBtn);
         setupUICallbacks();
         setupListeners();
@@ -507,6 +508,12 @@ public class DeviceControlActivity extends Activity {
                 openRegActivity();
             }
         });
+        mConfigBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                openConfigActivity();
+            }
+        });
     }
 
     public void openRegActivity(){
@@ -514,6 +521,11 @@ public class DeviceControlActivity extends Activity {
         startActivity(intent);
         // readRegisters();
     }
+    public void openConfigActivity() {
+        Intent intent = new Intent(this, ConfigActivity.class);
+        startActivity(intent);
+    }
+
     // Demonstrates how to iterate through the supported GATT Services/Characteristics.
     // In this sample, we populate the data structure that is bound to the ExpandableListView
     // on the UI.

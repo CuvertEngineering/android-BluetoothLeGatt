@@ -11,6 +11,8 @@ anim abc_slide_out_bottom
 anim abc_slide_out_top
 anim tooltip_enter
 anim tooltip_exit
+array SpinnerGainItems
+array SpinnerRateItems
 attr actionBarDivider
 attr actionBarItemBackground
 attr actionBarPopupTheme
@@ -140,6 +142,11 @@ attr editTextStyle
 attr elevation
 attr emptyVisibility
 attr expandActivityOverflowButtonDrawable
+attr fastScrollEnabled
+attr fastScrollHorizontalThumbDrawable
+attr fastScrollHorizontalTrackDrawable
+attr fastScrollVerticalThumbDrawable
+attr fastScrollVerticalTrackDrawable
 attr font
 attr fontFamily
 attr fontProviderAuthority
@@ -166,6 +173,7 @@ attr initialActivityCount
 attr isLightTheme
 attr itemPadding
 attr layout
+attr layoutManager
 attr layout_constrainedHeight
 attr layout_constrainedWidth
 attr layout_constraintBaseline_creator
@@ -256,6 +264,7 @@ attr radioButtonStyle
 attr ratingBarStyle
 attr ratingBarStyleIndicator
 attr ratingBarStyleSmall
+attr reverseLayout
 attr searchHintIcon
 attr searchIcon
 attr searchViewStyle
@@ -267,11 +276,13 @@ attr showDividers
 attr showText
 attr showTitle
 attr singleChoiceItemLayout
+attr spanCount
 attr spinBars
 attr spinnerDropDownItemStyle
 attr spinnerStyle
 attr splitTrack
 attr srcCompat
+attr stackFromEnd
 attr state_above_anchor
 attr subMenuArrow
 attr submitBackground
@@ -511,6 +522,9 @@ dimen compat_button_padding_vertical_material
 dimen compat_control_corner_material
 dimen disabled_alpha_material_dark
 dimen disabled_alpha_material_light
+dimen fastscroll_default_thickness
+dimen fastscroll_margin
+dimen fastscroll_minimum_range
 dimen highlight_alpha_material_colored
 dimen highlight_alpha_material_dark
 dimen highlight_alpha_material_light
@@ -519,6 +533,9 @@ dimen hint_alpha_material_light
 dimen hint_pressed_alpha_material_dark
 dimen hint_pressed_alpha_material_light
 dimen horizontal_page_margin
+dimen item_touch_helper_max_drag_scroll_per_frame
+dimen item_touch_helper_swipe_escape_max_velocity
+dimen item_touch_helper_swipe_escape_velocity
 dimen margin_huge
 dimen margin_large
 dimen margin_medium
@@ -651,6 +668,7 @@ drawable tooltip_frame_dark
 drawable tooltip_frame_light
 id ALT
 id CTRL
+id ConfigBtn
 id FUNCTION
 id META
 id SHIFT
@@ -683,9 +701,19 @@ id barrier
 id beginning
 id blocking
 id bottom
+id buttonGetConfig
 id buttonPanel
+id buttonSetConfig
 id cancel_action
 id chains
+id checkBoxChan1
+id checkBoxChan2
+id checkBoxChan3
+id checkBoxChan4
+id checkBoxChan5
+id checkBoxChan6
+id checkBoxChan7
+id checkBoxChan8
 id checkbox
 id chronometer
 id collapseActionView
@@ -703,6 +731,9 @@ id direct
 id disableHome
 id divider
 id divider2
+id editTextChannel
+id editTextGain
+id editTextRate
 id edit_query
 id end
 id end_padder
@@ -718,9 +749,11 @@ id icon
 id icon_group
 id ifRoom
 id image
+id impedanceIntervalText
 id info
 id invisible
 id italic
+id item_touch_helper_previous_elevation
 id left
 id line1
 id line3
@@ -753,7 +786,6 @@ id registerBtn
 id right
 id right_icon
 id right_side
-id sampleNumTxt
 id screen
 id scrollIndicatorDown
 id scrollIndicatorUp
@@ -775,6 +807,8 @@ id showHome
 id showTitle
 id singleReadBtn
 id spacer
+id spinnerGain1
+id spinnerRate
 id split_action_bar
 id spread
 id spread_inside
@@ -787,12 +821,14 @@ id startStrmBtn
 id status_bar_latest_event_content
 id submenuarrow
 id submit_area
+id switchImpedance
 id tabMode
 id tag_transition_group
 id text
 id text2
 id textSpacerNoButtons
 id textSpacerNoTitle
+id textViewImpedance
 id time
 id title
 id titleDividerNoCustom
@@ -837,6 +873,7 @@ layout abc_search_dropdown_item_icons_2line
 layout abc_search_view
 layout abc_select_dialog_material
 layout actionbar_indeterminate_progress
+layout activity_config
 layout activity_reg
 layout gatt_services_characteristics
 layout listitem_device
@@ -867,6 +904,8 @@ mipmap ic_launcher_foreground
 mipmap ic_launcher_round
 raw label
 raw logo
+string SpinnerGainPrompt
+string SpinnerRatePrompt
 string abc_action_bar_home_description
 string abc_action_bar_up_description
 string abc_action_menu_overflow_description
@@ -1314,6 +1353,7 @@ styleable MenuView android_windowAnimationStyle android_itemTextAppearance andro
 styleable PopupWindow android_popupBackground android_popupAnimationStyle overlapAnchor
 styleable PopupWindowBackgroundState state_above_anchor
 styleable RecycleListView paddingBottomNoButtons paddingTopNoTitle
+styleable RecyclerView android_orientation android_descendantFocusability fastScrollEnabled fastScrollHorizontalThumbDrawable fastScrollHorizontalTrackDrawable fastScrollVerticalThumbDrawable fastScrollVerticalTrackDrawable layoutManager reverseLayout spanCount stackFromEnd
 styleable SearchView android_focusable android_maxWidth android_inputType android_imeOptions closeIcon commitIcon defaultQueryHint goIcon iconifiedByDefault layout queryBackground queryHint searchHintIcon searchIcon submitBackground suggestionRowLayout voiceIcon
 styleable Spinner android_entries android_popupBackground android_prompt android_dropDownWidth popupTheme
 styleable SwitchCompat android_textOn android_textOff android_thumb showText splitTrack switchMinWidth switchPadding switchTextAppearance thumbTextPadding thumbTint thumbTintMode track trackTint trackTintMode

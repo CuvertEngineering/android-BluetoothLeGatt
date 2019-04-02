@@ -82,17 +82,18 @@
         android:text="Start Stream"
         android:visibility="invisible" />
 
-    <TextView
-        android:id="@+id/sampleNumTxt"
-        android:layout_width="160dp"
-        android:layout_height="wrap_content"
-        android:text="Sample: 0" />
-
     <View
         android:id="@+id/divider"
         android:layout_width="match_parent"
         android:layout_height="1dp"
         android:background="?android:attr/listDivider" />
+
+    <Button
+        android:id="@+id/ConfigBtn"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Heimdallr Config"
+        android:visibility="invisible" />
 
     <Button
         android:id="@+id/registerBtn"

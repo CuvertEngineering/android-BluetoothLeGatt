@@ -1,4 +1,4 @@
-#Mon Apr 01 14:30:44 PDT 2019
+#Mon Apr 01 17:36:02 PDT 2019
 base.0=/Users/fabien/work/heimdallr/android-BluetoothLeGatt/Application/build/intermediates/transforms/dexMerger/debug/1
 path.0=classes.dex
 renamed.0=classes.dex
