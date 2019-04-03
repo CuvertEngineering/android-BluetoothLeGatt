@@ -37,4 +37,8 @@ public class eegSample {
     {
         return timestamp - time;
     }
+    public double getValuV(int channelNum, int gain)
+    {
+        return channels.get(channelNum) * 4.5 / (8388607.0);
+    }
 }
