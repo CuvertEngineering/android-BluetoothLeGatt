@@ -233,7 +233,7 @@ public class DeviceControlActivity extends Activity {
                         int samplePerPacket = data.length/(3*numberChan + 4); // 4 is timestamp
                         Log.i(TAG, "Number of Samples:" + Long.toString(samplePerPacket));
                         Log.i(TAG, "packet size:" + Long.toString(data.length));
-                        for (int i = 0; i < samplePerPacket; i++){
+                        for (int i = 0; i < samplePerPacket; i++) {
                             ByteBuffer bufferTimestamp = ByteBuffer.wrap(data, offset, 4).order(ByteOrder.LITTLE_ENDIAN);
                             int timestamp = bufferTimestamp.getInt();
                             offset += 4;
@@ -245,15 +245,16 @@ public class DeviceControlActivity extends Activity {
                             for (int j = 0; j < numberChan; j++) {
                                 // TODO: verify channel reconstruction...
                                 Log.i(TAG, "Byte2:" + Byte.toString(data[offset]));
-                                int channel = channelReconstruct(data[offset], data[offset +1], data[offset +2]);
+                                int channel = channelReconstruct(data[offset], data[offset + 1], data[offset + 2]);
                                 Log.i(TAG, "Channel:" + Integer.toString(channel));
                                 channels.add(channel);
                                 offset += 3;
                             }
                             eegSample sample = new eegSample(timestamp, 0, mask, channels);
+                            addPlotSample(sample);
                             if (mIsImpedance == true) {
                                 // process Impedance
-                                addImpedanceChannel(channels.get(0));
+                                CalcImpedance(sample);
                             }
                         }
                     } catch (InterruptedException e) {
@@ -265,8 +266,18 @@ public class DeviceControlActivity extends Activity {
         }.start();
     }
 
-    private void addImpedanceChannel(int channel) {
-        Log.i(TAG, "Channel Added: " + Long.toString(channel));
+    private void CalcImpedance(eegSample sample) {
+        // first sample -> initial_t = sample.timestamp
+        // get min/max of samples until sample.timestamp = initial_t + 30ms (that's LOFF of ads1299)
+        // calculate (max - min) in uV
+        // average (max-min) over N periods
+        // calculate impedance (V/I - 4.4k)
+        // update impedance value
+
+    }
+    private void addPlotSample(eegSample sample) {
+        // add to plot buffer.
+        // plotting thread will pull data from buffer and plot
     }
     // Simple thread to read EEG samples and add it to buffer
     private void readPacket() {
@@ -321,6 +332,7 @@ public class DeviceControlActivity extends Activity {
     private void readBLEImpedance() {
 
         if (mReadStreamRunnable == null) {
+            mIsImpedance = true;
             sendImpedanceStart();
             Log.d(TAG, "Impdance start");
             mBtnImpedance.setText(R.string.menu_stop);
@@ -328,6 +340,7 @@ public class DeviceControlActivity extends Activity {
             mReadStreamRunnable.run();
             dataHandlerThread();
         } else {
+            mIsImpedance = false;
             Log.d(TAG, "Stream stop");
             mReadStreamRunnable.cancelStream();
             mReadStreamRunnable = null;
