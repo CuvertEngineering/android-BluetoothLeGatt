@@ -1,7 +1,0 @@
-#Wed Apr 03 16:04:59 PDT 2019
-base.0=/Users/fabien/work/heimdallr/android-BluetoothLeGatt/Application/build/intermediates/dex/debug/mergeProjectDexDebug/out
-path.1=classes.dex
-renamed.1=classes2.dex
-path.0=classes.dex
-renamed.0=classes.dex
-base.1=/Users/fabien/work/heimdallr/android-BluetoothLeGatt/Application/build/intermediates/dex/debug/mergeExtDexDebug/out

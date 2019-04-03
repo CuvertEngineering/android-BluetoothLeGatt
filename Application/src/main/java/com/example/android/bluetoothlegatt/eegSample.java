@@ -39,6 +39,10 @@ public class eegSample {
     }
     public double getValuV(int channelNum, int gain)
     {
-        return channels.get(channelNum) * 4.5 / (8388607.0);
+        if (((1<<(channelNum-1)) & chanMask) != 0) {
+            return channels.get(channelNum) * 4.5 / (gain * 8388607.0);
+        } else {
+            return 0;
+        }
     }
 }
