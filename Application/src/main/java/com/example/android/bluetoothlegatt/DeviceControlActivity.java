@@ -37,8 +37,9 @@ import android.widget.Button;
 import android.widget.ExpandableListView;
 import android.widget.SimpleExpandableListAdapter;
 import android.widget.TextView;
-
-
+import android.widget.Spinner;
+import android.widget.AdapterView.OnItemSelectedListener;
+import android.widget.AdapterView;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.io.BufferedReader;
@@ -75,8 +76,11 @@ public class DeviceControlActivity extends Activity {
     private Button mStreamingBtn;
     private Button mConfigBtn;
     private Button mRegBtn;
+    private Button mBtnImpedance;
+    private Spinner mChanSpin;
     private String mDeviceName;
     private String mDeviceAddress;
+    private int mImpedanceChan = 1;
     private boolean mIsImpedance = false;
     BlockingQueue<byte[]> dataQueue = new LinkedBlockingQueue<>(10000);
     public BluetoothLeService mBluetoothLeService;
@@ -143,6 +147,9 @@ public class DeviceControlActivity extends Activity {
                 mStreamingBtn.setVisibility(View.VISIBLE);
                 mConfigBtn.setVisibility(View.VISIBLE);
                 mRegBtn.setVisibility(View.VISIBLE);
+                mBtnImpedance.setVisibility(View.VISIBLE);
+                mChanSpin.setVisibility(View.VISIBLE);
+
                 displayGattServices(mBluetoothLeService.getSupportedGattServices());
             }
         }
@@ -158,6 +165,22 @@ public class DeviceControlActivity extends Activity {
                     if (characteristic != null) {
                         byte[] cmd = new byte[1];
                         cmd[0] = (byte)0x81;
+                        mBluetoothLeService.writeBytes(characteristic, cmd);
+                    }
+                }while(characteristic == null);
+            }
+        }.start();
+    }
+    private void sendImpedanceStart() {
+        new Thread() {
+            public void run() {
+                BluetoothGattCharacteristic characteristic;
+
+                do {
+                    characteristic = mBluetoothLeService.getCharacteristic(UUID.fromString(STREAMING_START_UUID));
+                    if (characteristic != null) {
+                        byte[] cmd = new byte[1];
+                        cmd[0] = (byte) (0xc0 + ((byte) mImpedanceChan));
                         mBluetoothLeService.writeBytes(characteristic, cmd);
                     }
                 }while(characteristic == null);
@@ -211,8 +234,8 @@ public class DeviceControlActivity extends Activity {
                         Log.i(TAG, "Number of Samples:" + Long.toString(samplePerPacket));
                         Log.i(TAG, "packet size:" + Long.toString(data.length));
                         for (int i = 0; i < samplePerPacket; i++){
-                            ByteBuffer bufferTimestAmp = ByteBuffer.wrap(data, offset, 4).order(ByteOrder.LITTLE_ENDIAN);
-                            int timestamp = bufferTimestAmp.getInt();
+                            ByteBuffer bufferTimestamp = ByteBuffer.wrap(data, offset, 4).order(ByteOrder.LITTLE_ENDIAN);
+                            int timestamp = bufferTimestamp.getInt();
                             offset += 4;
                             // For now we don't use Sample number as not useful and takes bandwidth for nothing...
 //                            ByteBuffer bufferSample = ByteBuffer.wrap(data, offset, 4).order(ByteOrder.LITTLE_ENDIAN);
@@ -245,6 +268,7 @@ public class DeviceControlActivity extends Activity {
     private void addImpedanceChannel(int channel) {
         Log.i(TAG, "Channel Added: " + Long.toString(channel));
     }
+    // Simple thread to read EEG samples and add it to buffer
     private void readPacket() {
         if (mBluetoothLeService != null) {
             BluetoothGattCharacteristic readChar =
@@ -255,27 +279,6 @@ public class DeviceControlActivity extends Activity {
                     if (responseByteArr.length > 1) {
                         // Add data to circular buffer and do no more processing...
                         dataQueue.add(responseByteArr);
-                        ByteBuffer buffer = ByteBuffer.wrap(responseByteArr, 5, 4).order(ByteOrder.LITTLE_ENDIAN);
-                        sample_number_Int = buffer.getInt();
-                        // dataBuff.add(responseByteArr);
-                        
-                        // buffer = ByteBuffer.wrap(responseByteArr, 0, 1);
-                        // int mask = buffer.getInt();
-                        // Log.i(TAG, "Mask = " + Long.toString(mask));
-
-
-                        // ts_curr_Long = System.currentTimeMillis();
-                        // Long samp_per_sec = (sample_number_Int - sample_number_prev)*1000/(ts_curr_Long-ts_prev_Long);
-                        // samp_per_sec_av = samp_per_sec_av + samp_per_sec;
-                        // reads = reads + 1;
-
-                        // if (reads >= 10) {
-                        //     mSampleField.setText("rate: " + Long.toString(samp_per_sec_av/reads));
-                        //     samp_per_sec_av = 0L;
-                        //     reads = 0;
-                        // }
-                        // sample_number_prev = sample_number_Int;
-                        // ts_prev_Long = ts_curr_Long;
                     }
                 } else {
                     Log.e(TAG, "Failed to read bytes");
@@ -310,6 +313,25 @@ public class DeviceControlActivity extends Activity {
             mReadStreamRunnable.cancelStream();
             mReadStreamRunnable = null;
             mStreamingBtn.setText(R.string.stream_read_start);
+            samp_per_sec_av = 0L;
+            sample_number_prev = 0;
+            sendstop();
+        }
+    }
+    private void readBLEImpedance() {
+
+        if (mReadStreamRunnable == null) {
+            sendImpedanceStart();
+            Log.d(TAG, "Impdance start");
+            mBtnImpedance.setText(R.string.menu_stop);
+            mReadStreamRunnable = new StreamReadRunnable(UUID.fromString(STREAMING_READ_UUID));
+            mReadStreamRunnable.run();
+            dataHandlerThread();
+        } else {
+            Log.d(TAG, "Stream stop");
+            mReadStreamRunnable.cancelStream();
+            mReadStreamRunnable = null;
+            mBtnImpedance.setText(R.string.stream_imp_start);
             samp_per_sec_av = 0L;
             sample_number_prev = 0;
             sendstop();
@@ -383,6 +405,8 @@ public class DeviceControlActivity extends Activity {
         mStreamingBtn.setVisibility(View.GONE);
         mConfigBtn.setVisibility(View.GONE);
         mRegBtn.setVisibility(View.GONE);
+        mBtnImpedance.setVisibility(View.GONE);
+        mChanSpin.setVisibility(View.GONE);
     }
 
     @Override
@@ -400,9 +424,11 @@ public class DeviceControlActivity extends Activity {
         mStreamingBtn = (Button) findViewById(R.id.startStrmBtn);
         mConfigBtn = (Button) findViewById(R.id.ConfigBtn);
         mRegBtn = (Button) findViewById(R.id.registerBtn);
+        mBtnImpedance = (Button) findViewById(R.id.btnImpedance);
+        mChanSpin = (Spinner) findViewById(R.id.chanSelectSpin);
         setupUICallbacks();
         setupListeners();
-
+        mBtnImpedance.setText(R.string.stream_imp_start);
         mLocalBroadcastManager = LocalBroadcastManager.getInstance(getApplicationContext());
         getActionBar().setTitle(mDeviceName);
         getActionBar().setDisplayHomeAsUpEnabled(true);
@@ -489,11 +515,29 @@ public class DeviceControlActivity extends Activity {
                 openRegActivity();
             }
         });
+        mBtnImpedance.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                //TODO: Change channel before!
+                readBLEImpedance();
+            }
+        });
         mConfigBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 openConfigActivity();
             }
+        });
+        mChanSpin.setOnItemSelectedListener(new OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                String chanStr = parent.getItemAtPosition(position).toString();
+                mImpedanceChan = Integer.valueOf(chanStr);
+            }
+            @Override
+            public void onNothingSelected(AdapterView<?> arg0) {
+            }
+
         });
     }
 

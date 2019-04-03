@@ -11,6 +11,7 @@ anim abc_slide_out_bottom
 anim abc_slide_out_top
 anim tooltip_enter
 anim tooltip_exit
+array SpinnerChanItems
 array SpinnerGainItems
 array SpinnerRateItems
 attr actionBarDivider
@@ -701,11 +702,13 @@ id barrier
 id beginning
 id blocking
 id bottom
+id btnImpedance
 id buttonGetConfig
 id buttonPanel
 id buttonSetConfig
 id cancel_action
 id chains
+id chanSelectSpin
 id checkBoxChan1
 id checkBoxChan2
 id checkBoxChan3
@@ -777,6 +780,7 @@ id packed
 id parent
 id parentPanel
 id percent
+id progressBarImp
 id progress_circular
 id progress_horizontal
 id radio
@@ -902,6 +906,7 @@ mipmap ic_launcher_foreground
 mipmap ic_launcher_round
 raw label
 raw logo
+string SpinnerChanPrompt
 string SpinnerGainPrompt
 string SpinnerRatePrompt
 string abc_action_bar_home_description
@@ -949,6 +954,7 @@ string menu_stop
 string no_data
 string search_menu_title
 string status_bar_notification_info_overflow
+string stream_imp_start
 string stream_read_start
 string stream_read_stop
 string title_devices
