@@ -749,6 +749,4 @@ public class BluetoothLeService extends Service {
         intentFilter.addAction(ACTION_DATA_AVAILABLE);
         return intentFilter;
     }
-
-
 }

@@ -4,17 +4,7 @@
             "outputFile": "/Users/azharmalik/git/android-BluetoothLeGatt/Application/build/intermediates/incremental/mergeDebugResources/merged.dir/values-af/values-af.xml",
             "map": [
                 {
-                    "source": "/Users/azharmalik/.gradle/caches/transforms-1/files-1.1/appcompat-v7-27.0.2.aar/979e30fc264d3526ab5985f8f6d5da0b/res/values-af/values-af.xml",
-                    "from": {
-                        "startLines": "2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19",
-                        "startColumns": "4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4",
-                        "startOffsets": "105,209,309,415,500,603,721,797,874,955,1062,1165,1262,1370,1472,1574,1728,1826",
-                        "endColumns": "103,99,105,84,102,117,75,76,80,106,102,96,107,101,101,153,97,79",
-                        "endOffsets": "204,304,410,495,598,716,792,869,950,1057,1160,1257,1365,1467,1569,1723,1821,1901"
-                    }
-                },
-                {
-                    "source": "/Users/azharmalik/.gradle/caches/transforms-1/files-1.1/support-compat-27.0.2.aar/0eed69d5b9751b5d79735eeea4407dbe/res/values-af/values-af.xml",
+                    "source": "/Users/azharmalik/.gradle/caches/transforms-1/files-1.1/support-compat-27.1.1.aar/4cef17c88b002ebbad65f4b20161d454/res/values-af/values-af.xml",
                     "from": {
                         "startLines": "2",
                         "startColumns": "4",
@@ -28,6 +18,16 @@
                         "startOffsets": "1906",
                         "endColumns": "100",
                         "endOffsets": "2002"
+                    }
+                },
+                {
+                    "source": "/Users/azharmalik/.gradle/caches/transforms-1/files-1.1/appcompat-v7-27.1.1.aar/cf9e732054eb80847dc48ce71ad37746/res/values-af/values-af.xml",
+                    "from": {
+                        "startLines": "2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19",
+                        "startColumns": "4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4",
+                        "startOffsets": "105,209,309,415,500,603,721,797,874,955,1062,1165,1262,1370,1472,1574,1728,1826",
+                        "endColumns": "103,99,105,84,102,117,75,76,80,106,102,96,107,101,101,153,97,79",
+                        "endOffsets": "204,304,410,495,598,716,792,869,950,1057,1160,1257,1365,1467,1569,1723,1821,1901"
                     }
                 }
             ]

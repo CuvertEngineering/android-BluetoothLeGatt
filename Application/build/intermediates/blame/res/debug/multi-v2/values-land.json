@@ -4,7 +4,7 @@
             "outputFile": "/Users/azharmalik/git/android-BluetoothLeGatt/Application/build/intermediates/incremental/mergeDebugResources/merged.dir/values-land/values-land.xml",
             "map": [
                 {
-                    "source": "/Users/azharmalik/.gradle/caches/transforms-1/files-1.1/appcompat-v7-27.0.2.aar/979e30fc264d3526ab5985f8f6d5da0b/res/values-land/values-land.xml",
+                    "source": "/Users/azharmalik/.gradle/caches/transforms-1/files-1.1/appcompat-v7-27.1.1.aar/cf9e732054eb80847dc48ce71ad37746/res/values-land/values-land.xml",
                     "from": {
                         "startLines": "2,3,4,5",
                         "startColumns": "4,4,4,4",

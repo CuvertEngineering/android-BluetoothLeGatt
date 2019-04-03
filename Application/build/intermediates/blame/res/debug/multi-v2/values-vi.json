@@ -4,7 +4,7 @@
             "outputFile": "/Users/azharmalik/git/android-BluetoothLeGatt/Application/build/intermediates/incremental/mergeDebugResources/merged.dir/values-vi/values-vi.xml",
             "map": [
                 {
-                    "source": "/Users/azharmalik/.gradle/caches/transforms-1/files-1.1/appcompat-v7-27.0.2.aar/979e30fc264d3526ab5985f8f6d5da0b/res/values-vi/values-vi.xml",
+                    "source": "/Users/azharmalik/.gradle/caches/transforms-1/files-1.1/appcompat-v7-27.1.1.aar/cf9e732054eb80847dc48ce71ad37746/res/values-vi/values-vi.xml",
                     "from": {
                         "startLines": "2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19",
                         "startColumns": "4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4",
@@ -14,7 +14,7 @@
                     }
                 },
                 {
-                    "source": "/Users/azharmalik/.gradle/caches/transforms-1/files-1.1/support-compat-27.0.2.aar/0eed69d5b9751b5d79735eeea4407dbe/res/values-vi/values-vi.xml",
+                    "source": "/Users/azharmalik/.gradle/caches/transforms-1/files-1.1/support-compat-27.1.1.aar/4cef17c88b002ebbad65f4b20161d454/res/values-vi/values-vi.xml",
                     "from": {
                         "startLines": "2",
                         "startColumns": "4",

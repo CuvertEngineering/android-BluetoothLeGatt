@@ -43,6 +43,10 @@ import android.widget.AdapterView.OnItemSelectedListener;
 import android.widget.AdapterView;
 import android.widget.Toast;
 
+import com.jjoe64.graphview.GraphView;
+import com.jjoe64.graphview.series.DataPoint;
+import com.jjoe64.graphview.series.LineGraphSeries;
+
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.lang.*;
@@ -83,15 +87,18 @@ public class DeviceControlActivity extends Activity {
     private Button mRegBtn;
     private Button mBtnImpedance;
     private Spinner mChanSpin;
+    private GraphView mGraphView;
     private String mDeviceName;
     private String mDeviceAddress;
     private int mImpedanceChan = 1;
     private boolean mIsImpedance = false;
+    private volatile boolean mDisplayGraph = false;
     BlockingQueue<byte[]> dataQueue = new LinkedBlockingQueue<>(10000);
     public BluetoothLeService mBluetoothLeService;
     private ArrayList<ArrayList<BluetoothGattCharacteristic>> mGattCharacteristics =
             new ArrayList<ArrayList<BluetoothGattCharacteristic>>();
     private boolean mConnected = false;
+    private LineGraphSeries mLineGraphSeries = new LineGraphSeries<>();
     private BluetoothGattCharacteristic mNotifyCharacteristic;
     private LocalBroadcastManager mLocalBroadcastManager;
     private StreamReadRunnable mReadStreamRunnable = null;
@@ -308,9 +315,21 @@ public class DeviceControlActivity extends Activity {
         }
 
     }
-    private void addPlotSample(eegSample sample) {
-        // add to plot buffer.
-        // plotting thread will pull data from buffer and plot
+    private void addPlotSample(final eegSample sample) {
+        if (mDisplayGraph && (mGraphView != null)) {
+            // Grid on the plot
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    mLineGraphSeries.appendData(new DataPoint(sample.getTimestamp(), 10), true, 100);
+                }
+            });
+            // Y and X will be automatic
+            // Delete upon re-orientation
+            // if user selects channel five, only display channel five if it exists else don't plot
+
+            //mLineGraphSeries.appendData();
+        }
     }
     // Simple thread to read EEG samples and add it to buffer
     private void readPacket() {
@@ -463,9 +482,9 @@ public class DeviceControlActivity extends Activity {
 
         // Checks the orientation of the screen
         if (newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE) {
-            Toast.makeText(this, "landscape", Toast.LENGTH_SHORT).show();
+            setupGraph();
         } else if (newConfig.orientation == Configuration.ORIENTATION_PORTRAIT){
-            Toast.makeText(this, "portrait", Toast.LENGTH_SHORT).show();
+            takeDownGraph();
         }
     }
 
@@ -480,9 +499,9 @@ public class DeviceControlActivity extends Activity {
 
         int orientation = this.getResources().getConfiguration().orientation;
         if (orientation == Configuration.ORIENTATION_PORTRAIT) {
-            // code for portrait mode
+            takeDownGraph();
         } else {
-            // code for landscape mode
+            setupGraph();
         }
         // Sets up UI references.
         ((TextView) findViewById(R.id.device_address)).setText(mDeviceAddress);
@@ -503,6 +522,20 @@ public class DeviceControlActivity extends Activity {
         Intent gattServiceIntent = new Intent(this, BluetoothLeService.class);
         startService(gattServiceIntent);
         bindService(gattServiceIntent, mServiceConnection, BIND_AUTO_CREATE);
+    }
+
+    private void setupGraph() {
+        mGraphView = (GraphView) findViewById(R.id.graph);
+        if (mGraphView != null) {
+            mDisplayGraph = true;
+            //mGraphView.getViewport().setXAxisBoundsManual(true);
+            //mGraphView.getViewport().setYAxisBoundsManual(true);
+            mGraphView.addSeries(mLineGraphSeries);
+        }
+    }
+
+    private void takeDownGraph() {
+        mDisplayGraph = false;
     }
 
     @Override
