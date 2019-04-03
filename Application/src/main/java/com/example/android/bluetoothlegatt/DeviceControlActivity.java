@@ -168,6 +168,36 @@ public class DeviceControlActivity extends Activity {
             }
         }
     };
+    private int mChannelGain  = 0;
+    private byte mChanMask = 0;
+    private int mImpedanceIntervalVal = 0;
+    private boolean mImpedanceOn = false;
+    private int mRate = 0;
+    private final String CONFIG_UUID ="5c3a659e-897e-45e1-b016-007107c96df4";
+
+    private void getConfig() {
+
+        if (mBluetoothLeService != null) {
+            BluetoothGattCharacteristic readChar =
+                    mBluetoothLeService.getCharacteristic((UUID.fromString(CONFIG_UUID)));
+            if (readChar != null) {
+                if (mBluetoothLeService.readBytes(readChar)) {
+                    byte[] cmd = readChar.getValue();
+                    // update all values
+                    mChannelGain = cmd[0] & 0xff;
+                    mChanMask = (byte) (cmd[1] & 0xff);
+                    mImpedanceIntervalVal = cmd[2] & 0xff;
+                    if (cmd[3] != 0) {
+                        mImpedanceOn = true;
+                    } else {
+                        mImpedanceOn = false;
+                    }
+                    mRate = (cmd[4]<<8);
+                    mRate = mRate + (cmd[5] & 0xff);
+                }
+            }
+        }
+    }
 
     private void sendstart() {
         new Thread() {
@@ -258,9 +288,9 @@ public class DeviceControlActivity extends Activity {
                             List<Integer> channels = new ArrayList<>();
                             for (int j = 0; j < numberChan; j++) {
                                 // TODO: verify channel reconstruction...
-                                Log.i(TAG, "Byte2:" + Byte.toString(data[offset]));
                                 int channel = channelReconstruct(data[offset], data[offset + 1], data[offset + 2]);
                                 Log.i(TAG, "Channel:" + Integer.toString(channel));
+                                Log.i(TAG, "timestamp:" + Integer.toString(timestamp));
                                 channels.add(channel);
                                 offset += 3;
                             }
@@ -280,7 +310,7 @@ public class DeviceControlActivity extends Activity {
         }.start();
     }
     // variables for impedance calculations
-    private static final int AMP_AVERAGE = 10;
+    private static final int AMP_AVERAGE = 50;
     int mInitialTimestamp = 0;
     boolean mRestartPeriod = true;
     int mChanMin = 0;
@@ -295,21 +325,22 @@ public class DeviceControlActivity extends Activity {
             mChanMin = mChanMax = sample.getSingleChan();
             mRestartPeriod = false;
         }
-        mChanMin = Math.min(mChanMin, sample.getTimestamp());
-        mChanMax = Math.max(mChanMax, sample.getTimestamp());
+        mChanMin = Math.min(mChanMin, sample.getSingleChan());
+        mChanMax = Math.max(mChanMax, sample.getSingleChan());
         if (sample.getTimeDiff(mInitialTimestamp) >= 3205) { // 3205 is 31.2Hz in ms*100
             int amp = mChanMax-mChanMin;
             // V = code * Vref / (gain * 2^23-1)
-            mAmplitudeV = mAmplitudeV + (amp * 4.5 / (8388607.0)); // Vref = 4.5V Assume ain of 1 for now. Will be fixed later on
+            Log.e(TAG, "amp = " + Integer.toString(amp));
+            mAmplitudeV = mAmplitudeV + (amp * 4.5 / (8388607.0)); // Vref = 4.5V Assume gain of 1 for now. Will be fixed later on
             mRestartPeriod = true;
             sample_number++;
             if (sample_number >= AMP_AVERAGE) {
                 // calculate impedance (V/I - 4.4k)
                 mAmplitudeV = mAmplitudeV/AMP_AVERAGE;
-                mImpedance = (mAmplitudeV/0.000000006) - 4400.0; //4400 is internal impdance
+                mImpedance = (mAmplitudeV/0.000000048) - 4400.0; //4400 is internal impdance
                 mAmplitudeV = 0;
                 // update impedance value on UI
-                updateImpedance(mImpedance/1000);
+                updateImpedance(mImpedance);
                 sample_number = 0;
             }
         }
@@ -608,7 +639,7 @@ public class DeviceControlActivity extends Activity {
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                mImpedanceTxt.setText(Double.toString(Impedance/1000) + "k");
+                mImpedanceTxt.setText(Integer.toString((int)Math.round(Impedance/1000)) + "k");
             }
         });
     }

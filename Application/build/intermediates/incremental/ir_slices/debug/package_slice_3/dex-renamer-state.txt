@@ -1,4 +1,0 @@
-#Wed Apr 03 16:06:53 PDT 2019
-base.0=/Users/azharmalik/git/android-BluetoothLeGatt/Application/build/intermediates/transforms/dexMerger/debug/3
-path.0=classes.dex
-renamed.0=classes.dex
