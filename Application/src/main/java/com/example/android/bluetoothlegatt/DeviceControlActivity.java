@@ -42,6 +42,7 @@ import android.widget.AdapterView.OnItemSelectedListener;
 import android.widget.AdapterView;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.lang.*;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -73,6 +74,7 @@ public class DeviceControlActivity extends Activity {
     int sample_number_Int = 0;
     int sample_number_prev = 0;
     private TextView mConnectionState;
+    private TextView mImpedanceTxt;
     private Button mStreamingBtn;
     private Button mConfigBtn;
     private Button mRegBtn;
@@ -98,7 +100,6 @@ public class DeviceControlActivity extends Activity {
     private final String WRITE_UUID = "6e400002-b5a3-f393-e0a9-e50e24dcca9e";
     private final String STREAMING_READ_UUID = "5c3a659e-897e-45e1-b016-007107c96df6";
     private final String STREAMING_START_UUID ="5c3a659e-897e-45e1-b016-007107c96df7";
-
 
     // Code to manage Service lifecycle.
     private final ServiceConnection mServiceConnection = new ServiceConnection() {
@@ -149,6 +150,7 @@ public class DeviceControlActivity extends Activity {
                 mRegBtn.setVisibility(View.VISIBLE);
                 mBtnImpedance.setVisibility(View.VISIBLE);
                 mChanSpin.setVisibility(View.VISIBLE);
+                mImpedanceTxt.setVisibility(View.VISIBLE);
 
                 displayGattServices(mBluetoothLeService.getSupportedGattServices());
             }
@@ -265,14 +267,40 @@ public class DeviceControlActivity extends Activity {
             }
         }.start();
     }
-
+    // variables for impedance calculations
+    private static final int AMP_AVERAGE = 10;
+    int mInitialTimestamp = 0;
+    boolean mRestartPeriod = true;
+    int mChanMin = 0;
+    int mChanMax = 0;
+    double mAmplitudeV = 0;
+    int sample_number = 0;
+    double mImpedance = 0;
     private void CalcImpedance(eegSample sample) {
         // first sample -> initial_t = sample.timestamp
-        // get min/max of samples until sample.timestamp = initial_t + 30ms (that's LOFF of ads1299)
-        // calculate (max - min) in uV
-        // average (max-min) over N periods
-        // calculate impedance (V/I - 4.4k)
-        // update impedance value
+        if (mRestartPeriod == true) {
+            mInitialTimestamp = sample.getTimestamp();
+            mChanMin = mChanMax = sample.getSingleChan();
+            mRestartPeriod = false;
+        }
+        mChanMin = Math.min(mChanMin, sample.getTimestamp());
+        mChanMax = Math.max(mChanMax, sample.getTimestamp());
+        if (sample.getTimeDiff(mInitialTimestamp) >= 3205) { // 3205 is 31.2Hz in ms*100
+            int amp = mChanMax-mChanMin;
+            // V = code * Vref / (gain * 2^23-1)
+            mAmplitudeV = mAmplitudeV + (amp * 4.5 / (8388607.0)); // Vref = 4.5V Assume ain of 1 for now. Will be fixed later on
+            mRestartPeriod = true;
+            sample_number++;
+            if (sample_number >= AMP_AVERAGE) {
+                // calculate impedance (V/I - 4.4k)
+                mAmplitudeV = mAmplitudeV/AMP_AVERAGE;
+                mImpedance = (mAmplitudeV/0.000000006) - 4400.0; //4400 is internal impdance
+                mAmplitudeV = 0;
+                // update impedance value on UI
+                updateImpedance(mImpedance/1000);
+                sample_number = 0;
+            }
+        }
 
     }
     private void addPlotSample(eegSample sample) {
@@ -420,6 +448,7 @@ public class DeviceControlActivity extends Activity {
         mRegBtn.setVisibility(View.GONE);
         mBtnImpedance.setVisibility(View.GONE);
         mChanSpin.setVisibility(View.GONE);
+        mImpedanceTxt.setVisibility(View.GONE);
     }
 
     @Override
@@ -439,6 +468,8 @@ public class DeviceControlActivity extends Activity {
         mRegBtn = (Button) findViewById(R.id.registerBtn);
         mBtnImpedance = (Button) findViewById(R.id.btnImpedance);
         mChanSpin = (Spinner) findViewById(R.id.chanSelectSpin);
+        mImpedanceTxt = (TextView) findViewById(R.id.txtImpedance);
+
         setupUICallbacks();
         setupListeners();
         mBtnImpedance.setText(R.string.stream_imp_start);
@@ -510,6 +541,14 @@ public class DeviceControlActivity extends Activity {
             @Override
             public void run() {
                 mConnectionState.setText(resourceId);
+            }
+        });
+    }
+    private void updateImpedance(final double Impedance) {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                mImpedanceTxt.setText(Double.toString(Impedance/1000) + "k");
             }
         });
     }

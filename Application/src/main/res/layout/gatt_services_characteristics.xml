@@ -187,12 +187,14 @@
             android:layout_height="match_parent"
             android:text="Button"
             android:visibility="invisible" />
-        <ProgressBar
-            android:id="@+id/progressBarImp"
-            style="?android:attr/progressBarStyle"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:visibility="invisible" />
+
+        <TextView
+            android:id="@+id/txtImpedance"
+            android:layout_width="wrap_content"
+            android:layout_height="31dp"
+            android:layout_weight="1"
+            android:visibility="invisible"
+            android:text="Impedance" />
     </LinearLayout>
 
 

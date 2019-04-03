@@ -780,7 +780,6 @@ id packed
 id parent
 id parentPanel
 id percent
-id progressBarImp
 id progress_circular
 id progress_horizontal
 id radio
@@ -837,6 +836,7 @@ id titleDividerNoCustom
 id title_template
 id top
 id topPanel
+id txtImpedance
 id uniform
 id up
 id useLogo
