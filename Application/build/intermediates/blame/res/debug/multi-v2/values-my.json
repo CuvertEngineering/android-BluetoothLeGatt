@@ -1,10 +1,10 @@
 {
     "logs": [
         {
-            "outputFile": "/Users/fabien/work/heimdallr/android-BluetoothLeGatt/Application/build/intermediates/incremental/mergeDebugResources/merged.dir/values-my/values-my.xml",
+            "outputFile": "/Users/azharmalik/git/android-BluetoothLeGatt/Application/build/intermediates/incremental/mergeDebugResources/merged.dir/values-my/values-my.xml",
             "map": [
                 {
-                    "source": "/Users/fabien/.gradle/caches/transforms-1/files-1.1/appcompat-v7-27.0.2.aar/b769626ea7799d3d8d098271c55739d6/res/values-my/values-my.xml",
+                    "source": "/Users/azharmalik/.gradle/caches/transforms-1/files-1.1/appcompat-v7-27.0.2.aar/979e30fc264d3526ab5985f8f6d5da0b/res/values-my/values-my.xml",
                     "from": {
                         "startLines": "2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19",
                         "startColumns": "4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4",
@@ -14,7 +14,7 @@
                     }
                 },
                 {
-                    "source": "/Users/fabien/.gradle/caches/transforms-1/files-1.1/support-compat-27.0.2.aar/3320a83133f34a63e1b6ea1af8055d2f/res/values-my/values-my.xml",
+                    "source": "/Users/azharmalik/.gradle/caches/transforms-1/files-1.1/support-compat-27.0.2.aar/0eed69d5b9751b5d79735eeea4407dbe/res/values-my/values-my.xml",
                     "from": {
                         "startLines": "2",
                         "startColumns": "4",

@@ -25,6 +25,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
+import android.content.res.Configuration;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.IBinder;
@@ -40,6 +41,8 @@ import android.widget.TextView;
 import android.widget.Spinner;
 import android.widget.AdapterView.OnItemSelectedListener;
 import android.widget.AdapterView;
+import android.widget.Toast;
+
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.lang.*;
@@ -106,6 +109,7 @@ public class DeviceControlActivity extends Activity {
 
         @Override
         public void onServiceConnected(ComponentName componentName, IBinder service) {
+            Log.i(TAG, "onServiceConnected");
             mBluetoothLeService = ((BluetoothLeService.LocalBinder) service).getService();
             if (!mBluetoothLeService.initialize()) {
                 Log.e(TAG, "Unable to initialize Bluetooth");
@@ -117,6 +121,7 @@ public class DeviceControlActivity extends Activity {
 
         @Override
         public void onServiceDisconnected(ComponentName componentName) {
+            Log.i(TAG, "onServiceDisconnected");
             mBluetoothLeService = null;
             if (mReadStreamRunnable != null) {
                 mReadStreamRunnable.cancelStream();
@@ -314,6 +319,7 @@ public class DeviceControlActivity extends Activity {
                     mBluetoothLeService.getCharacteristic((UUID.fromString(STREAMING_READ_UUID)));
             if (readChar != null) {
                 if (mBluetoothLeService.readBytes(readChar)) {
+                    Log.d(TAG, "Bytes ready");
                     byte[] responseByteArr = readChar.getValue();
                     if (responseByteArr.length > 1) {
                         // Add data to circular buffer and do no more processing...
@@ -452,6 +458,18 @@ public class DeviceControlActivity extends Activity {
     }
 
     @Override
+    public void onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+
+        // Checks the orientation of the screen
+        if (newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE) {
+            Toast.makeText(this, "landscape", Toast.LENGTH_SHORT).show();
+        } else if (newConfig.orientation == Configuration.ORIENTATION_PORTRAIT){
+            Toast.makeText(this, "portrait", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.gatt_services_characteristics);
@@ -460,6 +478,12 @@ public class DeviceControlActivity extends Activity {
         mDeviceName = intent.getStringExtra(EXTRAS_DEVICE_NAME);
         mDeviceAddress = intent.getStringExtra(EXTRAS_DEVICE_ADDRESS);
 
+        int orientation = this.getResources().getConfiguration().orientation;
+        if (orientation == Configuration.ORIENTATION_PORTRAIT) {
+            // code for portrait mode
+        } else {
+            // code for landscape mode
+        }
         // Sets up UI references.
         ((TextView) findViewById(R.id.device_address)).setText(mDeviceAddress);
         mConnectionState = (TextView) findViewById(R.id.connection_state);
@@ -477,6 +501,7 @@ public class DeviceControlActivity extends Activity {
         getActionBar().setTitle(mDeviceName);
         getActionBar().setDisplayHomeAsUpEnabled(true);
         Intent gattServiceIntent = new Intent(this, BluetoothLeService.class);
+        startService(gattServiceIntent);
         bindService(gattServiceIntent, mServiceConnection, BIND_AUTO_CREATE);
     }
 
@@ -498,7 +523,9 @@ public class DeviceControlActivity extends Activity {
 
     @Override
     protected void onDestroy() {
+        Log.i(TAG, "onDestroy");
         super.onDestroy();
+        mBluetoothLeService.disconnect();
         unbindService(mServiceConnection);
         mBluetoothLeService = null;
     }

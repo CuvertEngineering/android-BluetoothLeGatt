@@ -1,10 +1,10 @@
 {
     "logs": [
         {
-            "outputFile": "/Users/fabien/work/heimdallr/android-BluetoothLeGatt/Application/build/intermediates/incremental/mergeDebugResources/merged.dir/values-hdpi-v4/values-hdpi-v4.xml",
+            "outputFile": "/Users/azharmalik/git/android-BluetoothLeGatt/Application/build/intermediates/incremental/mergeDebugResources/merged.dir/values-hdpi-v4/values-hdpi-v4.xml",
             "map": [
                 {
-                    "source": "/Users/fabien/.gradle/caches/transforms-1/files-1.1/appcompat-v7-27.0.2.aar/b769626ea7799d3d8d098271c55739d6/res/values-hdpi-v4/values-hdpi-v4.xml",
+                    "source": "/Users/azharmalik/.gradle/caches/transforms-1/files-1.1/appcompat-v7-27.0.2.aar/979e30fc264d3526ab5985f8f6d5da0b/res/values-hdpi-v4/values-hdpi-v4.xml",
                     "from": {
                         "startLines": "2",
                         "startColumns": "4",

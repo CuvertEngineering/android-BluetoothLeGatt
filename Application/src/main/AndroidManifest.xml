@@ -34,7 +34,8 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".DeviceControlActivity" />
+        <activity android:name=".DeviceControlActivity"
+            android:configChanges="orientation|keyboardHidden" />
 
         <service
             android:name=".BluetoothLeService"
