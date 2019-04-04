@@ -551,6 +551,7 @@ public class DeviceControlActivity extends Activity {
 
     private void hideGraph() {
         if ((mGraphDialog != null) && mGraphDialog.isShowing()) {
+            mGraphDialog.resetData();
             mGraphDialog.dismiss();
         }
     }
@@ -567,15 +568,6 @@ public class DeviceControlActivity extends Activity {
                 View child = viewGroup.getChildAt(i);
                 setChildViewStatus(child, visible);
             }
-        }
-    }
-
-    private void takeDownGraph() {
-        View currentView = (View) this.findViewById(android.R.id.content).getRootView();
-        setChildViewStatus(currentView, true);
-        mDisplayGraph = false;
-        if (mGraphView != null) {
-            mGraphView.setVisibility(View.GONE);
         }
     }
 

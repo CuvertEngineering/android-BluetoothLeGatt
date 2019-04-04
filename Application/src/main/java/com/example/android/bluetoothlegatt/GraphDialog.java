@@ -3,6 +3,7 @@ package com.example.android.bluetoothlegatt;
 import android.app.Activity;
 import android.app.Dialog;
 import android.os.Bundle;
+import android.os.Handler;
 import android.util.Log;
 import android.view.View;
 import android.view.Window;
@@ -14,6 +15,8 @@ import com.jjoe64.graphview.series.DataPoint;
 import com.jjoe64.graphview.series.LineGraphSeries;
 
 import java.util.Random;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 
 public class GraphDialog extends Dialog {
@@ -24,10 +27,13 @@ public class GraphDialog extends Dialog {
     private GraphView mGraphView;
     private LineGraphSeries mLineGraphSeries = new LineGraphSeries<>();
     private Random rand = new Random();
+    private Object _lock = new Object();
+    private Handler mHandler;
 
     public GraphDialog(Activity a) {
         super(a);
-        this.mActivity = a;
+        mActivity = a;
+        mHandler = new Handler();
     }
 
     @Override
@@ -40,13 +46,22 @@ public class GraphDialog extends Dialog {
         mGraphView.addSeries(mLineGraphSeries);
     }
 
-    private void updateLineGraph(eegSample sample) {
+    private void updateLineGraph(final eegSample sample) {
         Log.w("GraphDialog", "Getting sample...");
-        int rand_y = rand.nextInt(100);
-        mLineGraphSeries.appendData(new DataPoint(sample.getTimestamp(), rand_y), false, 10000);
+        mHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                int rand_y = rand.nextInt(100);
+                mLineGraphSeries.appendData(new DataPoint(sample.getTimestamp(), rand_y), false, 90000);
+            }
+        });
     }
 
     public void sampleAvailable(eegSample sample) {
         updateLineGraph(sample);
+    }
+
+    public void resetData() {
+        mLineGraphSeries.resetData(new DataPoint[] {});
     }
 }
