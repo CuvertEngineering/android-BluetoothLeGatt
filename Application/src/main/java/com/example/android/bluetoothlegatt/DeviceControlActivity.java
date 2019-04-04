@@ -26,7 +26,6 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.res.Configuration;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.support.v4.content.LocalBroadcastManager;
@@ -34,6 +33,7 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ExpandableListView;
 import android.widget.SimpleExpandableListAdapter;
@@ -41,7 +41,6 @@ import android.widget.TextView;
 import android.widget.Spinner;
 import android.widget.AdapterView.OnItemSelectedListener;
 import android.widget.AdapterView;
-import android.widget.Toast;
 
 import com.jjoe64.graphview.GraphView;
 import com.jjoe64.graphview.series.DataPoint;
@@ -50,11 +49,6 @@ import com.jjoe64.graphview.series.LineGraphSeries;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.lang.*;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
@@ -99,6 +93,7 @@ public class DeviceControlActivity extends Activity {
             new ArrayList<ArrayList<BluetoothGattCharacteristic>>();
     private boolean mConnected = false;
     private LineGraphSeries mLineGraphSeries = new LineGraphSeries<>();
+    private GraphDialog mGraphDialog;
     private BluetoothGattCharacteristic mNotifyCharacteristic;
     private LocalBroadcastManager mLocalBroadcastManager;
     private StreamReadRunnable mReadStreamRunnable = null;
@@ -203,7 +198,7 @@ public class DeviceControlActivity extends Activity {
         new Thread() {
             public void run() {
                 BluetoothGattCharacteristic characteristic;
-
+                getConfig();
                 do {
                     characteristic = mBluetoothLeService.getCharacteristic(UUID.fromString(STREAMING_START_UUID));
                     if (characteristic != null) {
@@ -513,26 +508,28 @@ public class DeviceControlActivity extends Activity {
 
         // Checks the orientation of the screen
         if (newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE) {
-            setupGraph();
+            //setContentView(R.layout.gatt_services_characteristics);
+            showGraph();
         } else if (newConfig.orientation == Configuration.ORIENTATION_PORTRAIT){
-            takeDownGraph();
+            //setContentView(R.layout.gatt_services_characteristics);
+            hideGraph();
         }
     }
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.gatt_services_characteristics);
-
         final Intent intent = getIntent();
+        setContentView(R.layout.gatt_services_characteristics);
         mDeviceName = intent.getStringExtra(EXTRAS_DEVICE_NAME);
         mDeviceAddress = intent.getStringExtra(EXTRAS_DEVICE_ADDRESS);
+        mGraphDialog = new GraphDialog(this);
 
         int orientation = this.getResources().getConfiguration().orientation;
         if (orientation == Configuration.ORIENTATION_PORTRAIT) {
-            takeDownGraph();
+            //takeDownGraph();
         } else {
-            setupGraph();
+            showGraph();
         }
         // Sets up UI references.
         ((TextView) findViewById(R.id.device_address)).setText(mDeviceAddress);
@@ -555,18 +552,48 @@ public class DeviceControlActivity extends Activity {
         bindService(gattServiceIntent, mServiceConnection, BIND_AUTO_CREATE);
     }
 
-    private void setupGraph() {
+    private void showGraph() {
+        mGraphDialog.show();
+        /*
         mGraphView = (GraphView) findViewById(R.id.graph);
+        mGraphView.setVisibility(View.VISIBLE);
         if (mGraphView != null) {
             mDisplayGraph = true;
             //mGraphView.getViewport().setXAxisBoundsManual(true);
             //mGraphView.getViewport().setYAxisBoundsManual(true);
             mGraphView.addSeries(mLineGraphSeries);
+        }*/
+    }
+
+    private void hideGraph() {
+        Log.i(TAG, "hideGraph");
+        if (mGraphDialog.isShowing()) {
+            mGraphDialog.dismiss();
+        }
+    }
+
+    private void setChildViewStatus(View view, boolean visible) {
+        if (view instanceof ViewGroup) {
+            if (visible) {
+                view.setVisibility(View.VISIBLE);
+            } else {
+                view.setVisibility(View.GONE);
+            }
+            ViewGroup viewGroup = (ViewGroup) view;
+            for (int i = 0; i < viewGroup.getChildCount(); i++) {
+                View child = viewGroup.getChildAt(i);
+                setChildViewStatus(child, visible);
+            }
         }
     }
 
     private void takeDownGraph() {
+        View currentView = (View) this.findViewById(android.R.id.content).getRootView();
+        setChildViewStatus(currentView, true);
         mDisplayGraph = false;
+        if (mGraphView != null) {
+            mGraphView.setVisibility(View.GONE);
+        }
     }
 
     @Override
