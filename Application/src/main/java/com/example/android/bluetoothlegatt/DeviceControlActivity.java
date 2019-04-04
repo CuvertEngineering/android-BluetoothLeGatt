@@ -342,20 +342,9 @@ public class DeviceControlActivity extends Activity {
 
     }
     private void addPlotSample(final eegSample sample) {
-        if (mDisplayGraph && (mGraphView != null)) {
-            // Grid on the plot
-            runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    mLineGraphSeries.appendData(new DataPoint(sample.getTimestamp(), 10), true, 100);
-                }
-            });
-            // Y and X will be automatic
-            // Delete upon re-orientation
-            // if user selects channel five, only display channel five if it exists else don't plot
-
-            //mLineGraphSeries.appendData();
-        }
+        if ((mGraphDialog != null) && (mGraphDialog.isShowing())) {
+           mGraphDialog.sampleAvailable(sample);
+       }
     }
     // Simple thread to read EEG samples and add it to buffer
     private void readPacket() {
@@ -526,11 +515,12 @@ public class DeviceControlActivity extends Activity {
         mGraphDialog = new GraphDialog(this);
 
         int orientation = this.getResources().getConfiguration().orientation;
+        /*
         if (orientation == Configuration.ORIENTATION_PORTRAIT) {
             //takeDownGraph();
         } else {
             showGraph();
-        }
+        }*/
         // Sets up UI references.
         ((TextView) findViewById(R.id.device_address)).setText(mDeviceAddress);
         mConnectionState = (TextView) findViewById(R.id.connection_state);
@@ -553,21 +543,14 @@ public class DeviceControlActivity extends Activity {
     }
 
     private void showGraph() {
+        if (mGraphDialog == null) {
+            mGraphDialog = new GraphDialog(this);
+        }
         mGraphDialog.show();
-        /*
-        mGraphView = (GraphView) findViewById(R.id.graph);
-        mGraphView.setVisibility(View.VISIBLE);
-        if (mGraphView != null) {
-            mDisplayGraph = true;
-            //mGraphView.getViewport().setXAxisBoundsManual(true);
-            //mGraphView.getViewport().setYAxisBoundsManual(true);
-            mGraphView.addSeries(mLineGraphSeries);
-        }*/
     }
 
     private void hideGraph() {
-        Log.i(TAG, "hideGraph");
-        if (mGraphDialog.isShowing()) {
+        if ((mGraphDialog != null) && mGraphDialog.isShowing()) {
             mGraphDialog.dismiss();
         }
     }
