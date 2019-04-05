@@ -26,8 +26,6 @@ public class GraphDialog extends Dialog {
     public Button mYesBtn, mNoBtn;
     private GraphView mGraphView;
     private LineGraphSeries mLineGraphSeries = new LineGraphSeries<>();
-    private Random rand = new Random();
-    private Object _lock = new Object();
     private Handler mHandler;
 
     public GraphDialog(Activity a) {
@@ -40,25 +38,31 @@ public class GraphDialog extends Dialog {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         requestWindowFeature(Window.FEATURE_NO_TITLE);
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         setContentView(R.layout.graph_dialog);
         getWindow().setLayout(WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.MATCH_PARENT);
         mGraphView = (GraphView) findViewById(R.id.graph);
         mGraphView.addSeries(mLineGraphSeries);
+        mGraphView.getViewport().setScrollable(true);
+        mGraphView.getViewport().setMinX(0);
+        mGraphView.getViewport().setMaxX(400000);
+        mGraphView.getViewport().setXAxisBoundsManual(true);
     }
-
-    private void updateLineGraph(final eegSample sample) {
-        Log.w("GraphDialog", "Getting sample...");
+    //TODO: pass variables into the class
+    private void updateLineGraph(final eegSample sample, final int gain, final int chan) {
+//        Log.w("GraphDialog", "Getting sample...");
         mHandler.post(new Runnable() {
             @Override
             public void run() {
-                int rand_y = rand.nextInt(100);
-                mLineGraphSeries.appendData(new DataPoint(sample.getTimestamp(), rand_y), false, 90000);
+                mLineGraphSeries.appendData(new DataPoint(sample.getTimestamp(), sample.getValuV(chan, gain)), true, 2000);
+//                mHandler.postDelayed(this, 50);
+                mGraphView.onDataChanged(false, false);
             }
         });
     }
 
-    public void sampleAvailable(eegSample sample) {
-        updateLineGraph(sample);
+    public void sampleAvailable(eegSample sample, int gain, int chan) {
+        updateLineGraph(sample,gain, chan);
     }
 
     public void resetData() {

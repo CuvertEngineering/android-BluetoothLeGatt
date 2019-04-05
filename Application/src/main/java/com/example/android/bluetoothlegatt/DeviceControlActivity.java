@@ -46,6 +46,8 @@ import com.jjoe64.graphview.GraphView;
 import com.jjoe64.graphview.series.DataPoint;
 import com.jjoe64.graphview.series.LineGraphSeries;
 
+import org.apache.commons.lang3.ObjectUtils;
+
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.lang.*;
@@ -80,6 +82,7 @@ public class DeviceControlActivity extends Activity {
     private Button mConfigBtn;
     private Button mRegBtn;
     private Button mBtnImpedance;
+    private TextView mVisuChan;
     private Spinner mChanSpin;
     private GraphView mGraphView;
     private String mDeviceName;
@@ -131,12 +134,6 @@ public class DeviceControlActivity extends Activity {
         }
     };
 
-    // Handles various events fired by the Service.
-    // ACTION_GATT_CONNECTED: connected to a GATT server.
-    // ACTION_GATT_DISCONNECTED: disconnected from a GATT server.
-    // ACTION_GATT_SERVICES_DISCOVERED: discovered GATT services.
-    // ACTION_DATA_AVAILABLE: received data from the device.  This can be a result of read
-    //                        or notification operations.
     private final BroadcastReceiver mGattUpdateReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -158,6 +155,7 @@ public class DeviceControlActivity extends Activity {
                 mBtnImpedance.setVisibility(View.VISIBLE);
                 mChanSpin.setVisibility(View.VISIBLE);
                 mImpedanceTxt.setVisibility(View.VISIBLE);
+                mVisuChan.setVisibility(View.VISIBLE);
 
                 displayGattServices(mBluetoothLeService.getSupportedGattServices());
             }
@@ -170,7 +168,7 @@ public class DeviceControlActivity extends Activity {
     private int mRate = 0;
     private final String CONFIG_UUID ="5c3a659e-897e-45e1-b016-007107c96df4";
 
-    private void getConfig() {
+    private boolean getConfig() {
 
         if (mBluetoothLeService != null) {
             BluetoothGattCharacteristic readChar =
@@ -178,32 +176,37 @@ public class DeviceControlActivity extends Activity {
             if (readChar != null) {
                 if (mBluetoothLeService.readBytes(readChar)) {
                     byte[] cmd = readChar.getValue();
-                    // update all values
-                    mChannelGain = cmd[0] & 0xff;
-                    mChanMask = (byte) (cmd[1] & 0xff);
-                    mImpedanceIntervalVal = cmd[2] & 0xff;
-                    if (cmd[3] != 0) {
-                        mImpedanceOn = true;
-                    } else {
-                        mImpedanceOn = false;
+                    if (cmd.length > 0) {
+                        // update all values
+                        mChannelGain = cmd[0] & 0xff;
+                        mChanMask = (byte) (cmd[1] & 0xff);
+                        mImpedanceIntervalVal = cmd[2] & 0xff;
+                        if (cmd[3] != 0) {
+                            mImpedanceOn = true;
+                        } else {
+                            mImpedanceOn = false;
+                        }
+                        mRate = (cmd[4] << 8);
+                        mRate = mRate + (cmd[5] & 0xff);
+                        return true;
                     }
-                    mRate = (cmd[4]<<8);
-                    mRate = mRate + (cmd[5] & 0xff);
                 }
             }
         }
+        return false;
     }
 
     private void sendstart() {
         new Thread() {
             public void run() {
                 BluetoothGattCharacteristic characteristic;
-                getConfig();
+                while(getConfig() == false);
                 do {
                     characteristic = mBluetoothLeService.getCharacteristic(UUID.fromString(STREAMING_START_UUID));
                     if (characteristic != null) {
                         byte[] cmd = new byte[1];
                         cmd[0] = (byte)0x81;
+                        mBluetoothLeService.writeBytes(characteristic, cmd);
                         mBluetoothLeService.writeBytes(characteristic, cmd);
                     }
                 }while(characteristic == null);
@@ -214,7 +217,7 @@ public class DeviceControlActivity extends Activity {
         new Thread() {
             public void run() {
                 BluetoothGattCharacteristic characteristic;
-
+                getConfig();
                 do {
                     characteristic = mBluetoothLeService.getCharacteristic(UUID.fromString(STREAMING_START_UUID));
                     if (characteristic != null) {
@@ -237,10 +240,10 @@ public class DeviceControlActivity extends Activity {
                     if (characteristic != null) {
                         byte[] cmd = new byte[1];
                         cmd[0] = (byte)0x80;
-                        mBluetoothLeService.writeBytes(characteristic, cmd);
-                        // Don't know why the first one isn't seen...
-                        mBluetoothLeService.writeBytes(characteristic, cmd);
-                    }
+                            mBluetoothLeService.writeBytes(characteristic, cmd);
+                            // Don't know why the first one isn't seen...
+                            mBluetoothLeService.writeBytes(characteristic, cmd);
+                        }
                 }while(characteristic == null);
             }
         }.start();
@@ -265,13 +268,13 @@ public class DeviceControlActivity extends Activity {
                         // read first byte to determine sample size
                         int mask = data[0];
                         int numberChan = Integer.bitCount(mask);
-                        Log.i(TAG, "Number of channels:" + Long.toString(numberChan));
+//                        Log.i(TAG, "Number of channels:" + Long.toString(numberChan));
                         // correct for loop to max number of packets
                         int offset = 1;
                         // get each sample
                         int samplePerPacket = data.length/(3*numberChan + 4); // 4 is timestamp
-                        Log.i(TAG, "Number of Samples:" + Long.toString(samplePerPacket));
-                        Log.i(TAG, "packet size:" + Long.toString(data.length));
+//                        Log.i(TAG, "Number of Samples:" + Long.toString(samplePerPacket));
+//                        Log.i(TAG, "packet size:" + Long.toString(data.length));
                         for (int i = 0; i < samplePerPacket; i++) {
                             ByteBuffer bufferTimestamp = ByteBuffer.wrap(data, offset, 4).order(ByteOrder.LITTLE_ENDIAN);
                             int timestamp = bufferTimestamp.getInt();
@@ -282,15 +285,14 @@ public class DeviceControlActivity extends Activity {
 //                            offset += 4;
                             List<Integer> channels = new ArrayList<>();
                             for (int j = 0; j < numberChan; j++) {
-                                // TODO: verify channel reconstruction...
                                 int channel = channelReconstruct(data[offset], data[offset + 1], data[offset + 2]);
-                                Log.i(TAG, "Channel:" + Integer.toString(channel));
-                                Log.i(TAG, "timestamp:" + Integer.toString(timestamp));
+//                                Log.i(TAG, "Channel:" + Integer.toString(channel));
+//                                Log.i(TAG, "timestamp:" + Integer.toString(timestamp));
                                 channels.add(channel);
                                 offset += 3;
                             }
                             eegSample sample = new eegSample(timestamp, 0, mask, channels);
-                            addPlotSample(sample);
+                            addPlotSample(sample, mChannelGain,mImpedanceChan);
                             if (mIsImpedance == true) {
                                 // process Impedance
                                 CalcImpedance(sample);
@@ -325,8 +327,8 @@ public class DeviceControlActivity extends Activity {
         if (sample.getTimeDiff(mInitialTimestamp) >= 3205) { // 3205 is 31.2Hz in ms*100
             int amp = mChanMax-mChanMin;
             // V = code * Vref / (gain * 2^23-1)
-            Log.e(TAG, "amp = " + Integer.toString(amp));
-            mAmplitudeV = mAmplitudeV + (amp * 4.5 / (8388607.0)); // Vref = 4.5V Assume gain of 1 for now. Will be fixed later on
+//            Log.e(TAG, "amp = " + Integer.toString(amp));
+            mAmplitudeV = mAmplitudeV + (amp * 4.5 / (mChannelGain * 8388607.0)); // Vref = 4.5V Assume gain of 1 for now. Will be fixed later on
             mRestartPeriod = true;
             sample_number++;
             if (sample_number >= AMP_AVERAGE) {
@@ -341,9 +343,9 @@ public class DeviceControlActivity extends Activity {
         }
 
     }
-    private void addPlotSample(final eegSample sample) {
+    private void addPlotSample(final eegSample sample, int gain, int chanNumber) {
         if ((mGraphDialog != null) && (mGraphDialog.isShowing())) {
-           mGraphDialog.sampleAvailable(sample);
+           mGraphDialog.sampleAvailable(sample, gain, chanNumber);
        }
     }
     // Simple thread to read EEG samples and add it to buffer
@@ -353,7 +355,7 @@ public class DeviceControlActivity extends Activity {
                     mBluetoothLeService.getCharacteristic((UUID.fromString(STREAMING_READ_UUID)));
             if (readChar != null) {
                 if (mBluetoothLeService.readBytes(readChar)) {
-                    Log.d(TAG, "Bytes ready");
+//                    Log.d(TAG, "Bytes ready");
                     byte[] responseByteArr = readChar.getValue();
                     if (responseByteArr.length > 1) {
                         // Add data to circular buffer and do no more processing...
@@ -489,6 +491,7 @@ public class DeviceControlActivity extends Activity {
         mBtnImpedance.setVisibility(View.GONE);
         mChanSpin.setVisibility(View.GONE);
         mImpedanceTxt.setVisibility(View.GONE);
+        mVisuChan.setVisibility(View.GONE);
     }
 
     @Override
@@ -530,6 +533,7 @@ public class DeviceControlActivity extends Activity {
         mBtnImpedance = (Button) findViewById(R.id.btnImpedance);
         mChanSpin = (Spinner) findViewById(R.id.chanSelectSpin);
         mImpedanceTxt = (TextView) findViewById(R.id.txtImpedance);
+        mVisuChan = (TextView) findViewById(R.id.textVisiChan);
 
         setupUICallbacks();
         setupListeners();

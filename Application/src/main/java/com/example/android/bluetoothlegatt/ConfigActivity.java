@@ -43,7 +43,9 @@ public class ConfigActivity extends Activity {
     private Switch mImpedanceSwitch;
     private Spinner mChanGainSpin;
     private Spinner mChanRateSpin;
+    private Spinner mRateStreamSpin;
     private int mRate = 250;
+    private int mRateStream = 250;
     private int mChannelGain = 1;
     private byte mChanMask = 0;
     private int mImpedanceIntervalVal = 0;
@@ -91,6 +93,7 @@ public class ConfigActivity extends Activity {
 
         mChanGainSpin = (Spinner) findViewById(R.id.spinnerGain1);
         mChanRateSpin = (Spinner) findViewById(R.id.spinnerRate);
+        mRateStreamSpin = (Spinner) findViewById(R.id.spinnerRateStream);
         mImpedanceSwitch = (Switch) findViewById(R.id.switchImpedance);
 
         mImpedanceInterval = (EditText) findViewById(R.id.impedanceIntervalText);
@@ -98,7 +101,7 @@ public class ConfigActivity extends Activity {
         setupListeners();
 
         // Code to manage Service lifecycle.
-
+//        getConfig();
 
     }
     @Override
@@ -114,7 +117,7 @@ public class ConfigActivity extends Activity {
                 do {
                     characteristic = mBluetoothLeService.getCharacteristic(UUID.fromString(CONFIG_UUID));
                     if (characteristic != null) {
-                        byte[] cmd = new byte[6];
+                        byte[] cmd = new byte[8];
                         cmd[0] = (byte) mChannelGain;
                         cmd[1] = mChanMask;
                         cmd[2] = (byte) mImpedanceIntervalVal;
@@ -126,6 +129,8 @@ public class ConfigActivity extends Activity {
 
                         cmd[4] = (byte) (mRate >> 8);
                         cmd[5] = (byte) (mRate & 0xff);
+                        cmd[6] = (byte) (mRateStream >> 8);
+                        cmd[7] = (byte) (mRateStream & 0xff);
                         mBluetoothLeService.writeBytes(characteristic, cmd);
                     }
                 }while(characteristic == null);
@@ -135,30 +140,31 @@ public class ConfigActivity extends Activity {
     private void getConfig() {
         new Thread() {
             public void run() {
-                if (mBluetoothLeService != null) {
-                    BluetoothGattCharacteristic readChar =
-                            mBluetoothLeService.getCharacteristic((UUID.fromString(CONFIG_UUID)));
-                    if (readChar != null) {
-                        if (mBluetoothLeService.readBytes(readChar)) {
-                            byte[] cmd = readChar.getValue();
-                            // update all values
-                            mChannelGain = cmd[0] & 0xff;
-                            mChanMask = (byte) (cmd[1] & 0xff);
-                            mImpedanceIntervalVal = cmd[2] & 0xff;
-                            if (cmd[3] != 0) {
-                                mImpedance = true;
-                            } else {
-                                mImpedance = false;
-                            }
-                            mRate = (cmd[4]<<8);
-                            mRate = mRate + (cmd[5] & 0xff);
-                            runOnUiThread(new Runnable() {
-                                @Override
-                                public void run() {
-                                    updateConfig();
-                                }
-                            });
+                while (mBluetoothLeService == null) ;
+                BluetoothGattCharacteristic readChar =
+                        mBluetoothLeService.getCharacteristic((UUID.fromString(CONFIG_UUID)));
+                if (readChar != null) {
+                    if (mBluetoothLeService.readBytes(readChar)) {
+                        byte[] cmd = readChar.getValue();
+                        // update all values
+                        mChannelGain = cmd[0] & 0xff;
+                        mChanMask = (byte) (cmd[1] & 0xff);
+                        mImpedanceIntervalVal = cmd[2] & 0xff;
+                        if (cmd[3] != 0) {
+                            mImpedance = true;
+                        } else {
+                            mImpedance = false;
                         }
+                        mRate = (cmd[4] << 8);
+                        mRate = mRate + (cmd[5] & 0xff);
+                        mRateStream = (cmd[6] << 8);
+                        mRateStream = mRateStream + (cmd[7] & 0xff);
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                updateConfig();
+                            }
+                        });
                     }
                 }
             }
@@ -174,9 +180,7 @@ public class ConfigActivity extends Activity {
         return 0;
     }
     private void updateConfig() {
-        mChanGainSpin.setSelection(getIndex(mChanGainSpin, Integer.toString(mChannelGain)));
-        mImpedanceInterval.setText(Integer.toString(mImpedanceIntervalVal));
-        mChanRateSpin.setSelection(getIndex(mChanRateSpin, Integer.toString(mRate)));
+
         if (mImpedance == false) {
             mImpedanceSwitch.setChecked(false);
         } else {
@@ -222,6 +226,10 @@ public class ConfigActivity extends Activity {
         }else {
             mChan8Check.setChecked(false);
         }
+        mChanGainSpin.setSelection(getIndex(mChanGainSpin, Integer.toString(mChannelGain)));
+        mImpedanceInterval.setText(Integer.toString(mImpedanceIntervalVal));
+        mChanRateSpin.setSelection(getIndex(mChanRateSpin, Integer.toString(mRate)));
+        mRateStreamSpin.setSelection(getIndex(mRateStreamSpin, Integer.toString((mRateStream))));
 
     }
     private void setupListeners(){
@@ -229,6 +237,7 @@ public class ConfigActivity extends Activity {
             @Override
             public void onClick(View v) {
                 getConfig();
+                mSetConfig.setEnabled(true);
             }
         });
 
@@ -337,6 +346,17 @@ public class ConfigActivity extends Activity {
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 String rateStr = parent.getItemAtPosition(position).toString();
                 mRate = Integer.valueOf(rateStr);
+            }
+            @Override
+            public void onNothingSelected(AdapterView<?> arg0) {
+            }
+
+        });
+        mRateStreamSpin.setOnItemSelectedListener(new OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                String rateStr = parent.getItemAtPosition(position).toString();
+                mRateStream = Integer.valueOf(rateStr);
             }
             @Override
             public void onNothingSelected(AdapterView<?> arg0) {
