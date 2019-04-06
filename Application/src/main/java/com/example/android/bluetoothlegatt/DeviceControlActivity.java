@@ -307,7 +307,7 @@ public class DeviceControlActivity extends Activity {
         }.start();
     }
     // variables for impedance calculations
-    private static final int AMP_AVERAGE = 50;
+    private static final int AMP_AVERAGE = 10;
     int mInitialTimestamp = 0;
     boolean mRestartPeriod = true;
     int mChanMin = 0;
@@ -324,7 +324,7 @@ public class DeviceControlActivity extends Activity {
         }
         mChanMin = Math.min(mChanMin, sample.getSingleChan());
         mChanMax = Math.max(mChanMax, sample.getSingleChan());
-        if (sample.getTimeDiff(mInitialTimestamp) >= 3205) { // 3205 is 31.2Hz in ms*100
+        if (sample.getTimeDiff(mInitialTimestamp) >= 12820) { // 12820 is 7.8Hz in ms*100
             int amp = mChanMax-mChanMin;
             // V = code * Vref / (gain * 2^23-1)
 //            Log.e(TAG, "amp = " + Integer.toString(amp));
@@ -334,7 +334,7 @@ public class DeviceControlActivity extends Activity {
             if (sample_number >= AMP_AVERAGE) {
                 // calculate impedance (V/I - 4.4k)
                 mAmplitudeV = mAmplitudeV/AMP_AVERAGE;
-                mImpedance = (mAmplitudeV/0.000000048) - 4400.0; //4400 is internal impdance
+                mImpedance = (mAmplitudeV/0.000000012) - 4400.0; //4400 is internal impdance
                 mAmplitudeV = 0;
                 // update impedance value on UI
                 updateImpedance(mImpedance);
@@ -645,7 +645,12 @@ public class DeviceControlActivity extends Activity {
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                mImpedanceTxt.setText(Integer.toString((int)Math.round(Impedance/1000)) + "k");
+                if(Impedance>5800000){
+                    mImpedanceTxt.setText("Lead OFF");
+                } else {
+                    mImpedanceTxt.setText(Integer.toString((int)Math.round(Impedance/1000)) + "k");
+                }
+
             }
         });
     }

@@ -2,7 +2,8 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:orientation="vertical"
-    android:configChanges="orientation|screenSize"
+    android:screenOrientation="nosensor"
+    android:configChanges="keyboardHidden|orientation|screenSize"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:scaleType="fitCenter"
@@ -188,13 +189,15 @@
 
     <Switch
         android:id="@+id/switchImpedance"
-        android:layout_width="310dp"
+        android:layout_width="257dp"
         android:layout_height="wrap_content"
         android:layout_alignParentTop="true"
         android:layout_alignParentEnd="true"
-        android:layout_marginTop="341dp"
-        android:layout_marginEnd="101dp"
-        android:text="Impedance:" />
+        android:layout_marginStart="14dp"
+        android:layout_marginTop="340dp"
+        android:layout_marginEnd="140dp"
+        android:text="Impedance:"
+        android:textSize="14dp" />
 
     <Spinner
         android:id="@+id/spinnerRate"
