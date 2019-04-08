@@ -51,7 +51,7 @@ public class DeviceScanActivity extends ListActivity {
     private static final int REQUEST_ENABLE_BT = 1;
     // Stops scanning after 10 seconds.
     private static final long SCAN_PERIOD = 10000;
-
+    private final static String TAG = DeviceControlActivity.class.getSimpleName();
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -197,6 +197,7 @@ public class DeviceScanActivity extends ListActivity {
                 if(deviceName != null){
                     if(deviceName.contains("Heimdallr")) {
                         mLeDevices.add(device);
+                        Log.i(TAG, "-> added to list");
                     }
                 }
             }
